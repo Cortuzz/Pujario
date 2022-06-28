@@ -1,11 +1,13 @@
-﻿using Pujario.NoiseGeneration.Interfaces;
+﻿using Pujario.Exceptions.NoiseGenerator;
+using Pujario.NoiseGeneration.Interfaces;
 using Pujario.Utils;
 
 namespace Pujario.NoiseGeneration
 {
     public class NoiseGenerator2D : INoiseGenerator, INoiseGeneratorHorizontal, INoiseGeneratorVertical
     {
-        public int Seed { get; set; }
+        public sbyte Dimensions => 2;
+        public int Seed { get; }
         public int Width { get; }
         public int Height { get; }
         public float HorizontalFrequency { get; set; }
@@ -21,6 +23,14 @@ namespace Pujario.NoiseGeneration
             Height = height;
         }
         
+        /// <summary>Generating <see cref="Dimensions">2 dimensional</see> noise</summary>
+        /// <exception cref="NoiseGeneratorException">throwing when properties
+        /// <see cref="Persistence">Persistence</see>, <see cref="Octaves">Octaves</see>,
+        /// <see cref="HorizontalFrequency">Horizontal Frequency</see> or
+        /// <see cref="VerticalFrequency">Vertical Frequency</see> was not set.
+        /// </exception>
+        /// <returns>One dimensional array of float noise values between 0 and 1
+        /// with size <see cref="Width">Width</see> * <see cref="Height">Height</see>.</returns>
         public float[] Generate()
         {
             var noiseMap = new float[Width * Height];
