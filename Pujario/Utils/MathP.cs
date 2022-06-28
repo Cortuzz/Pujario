@@ -1,6 +1,6 @@
 ﻿namespace Pujario.Utils
 {
-    public class MathP
+    public static class MathP
     {
 	    private static readonly int[] Permutation = { 151,160,137,91,90,15,
 		    131,13,201,95,96,53,194,233,7,225,140,36,103,30,69,142,8,99,37,240,21,10,23,
@@ -18,21 +18,21 @@
 	    };
 		
 	    private static readonly int[] P;
-		
-	    static MathP() 
+
+	    static MathP()
 	    {
 		    P = new int[512];
-		    for(var x = 0; x < 512; x++)
+		    for (var x = 0; x < 512; x++)
 			    P[x] = Permutation[x % 256];
 	    }
 
 	    public static double OctavePerlin(double x, double y, double z, int octaves, double persistence)
 	    {
-		    double total = 0;
-		    double frequency = 1;
-		    double amplitude = 1;
+		    var total = 0.0;
+		    var frequency = 1.0;
+		    var amplitude = 1.0;
 		    
-		    for(var i = 0; i < octaves; i++) 
+		    for (var i = 0; i < octaves; i++) 
 		    {
 			    total += Perlin(x * frequency, y * frequency, z * frequency) * amplitude;
 				
