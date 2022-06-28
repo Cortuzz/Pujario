@@ -26,6 +26,13 @@
 			    P[x] = Permutation[x % 256];
 	    }
 
+	    /// <summary>Combined value of Perlin noises at different frequencies (octaves) in 3-dimensional space</summary>
+	    /// <param name="x">X Perlin noise coordinate</param>
+	    /// <param name="y">Y Perlin noise coordinate (pass 0 for 1D noise)</param>
+	    /// <param name="z">Z Perlin noise coordinate (pass 0 for 2D noise)</param>
+	    /// <param name="octaves">The number of Perlin noises of different frequencies (octaves)</param>
+	    /// <param name="persistence">Indicating an increase in the influence of higher frequency octaves</param>
+	    /// <returns>Combined value of Perlin noises in an unlimited range</returns>
 	    public static double OctavePerlin(double x, double y, double z, int octaves, double persistence)
 	    {
 		    double total = 0;
@@ -43,6 +50,11 @@
 		    return total;
 	    }
 	    
+	    /// <summary>Perlin noise in 3-dimensional space</summary>
+	    /// <param name="x">X Perlin noise coordinate</param>
+	    /// <param name="y">Y Perlin noise coordinate (pass 0 for 1D noise)</param>
+	    /// <param name="z">Z Perlin noise coordinate (pass 0 for 2D noise)</param>
+	    /// <returns>Perlin noise value in range between 0 and 1</returns>
 		public static double Perlin(double x, double y, double z) 
 		{
 			var xi = (int)x & 255;								// Calculate the "unit cube" that the point asked will be located in
@@ -76,12 +88,21 @@
 			
 			return (Lerp (y1, y2, w) + 1) / 2; // For convenience we bound it to 0 - 1 (theoretical min/max before is -1 - 1)
 		}
-
-        public static double Lerp(double a, double b, double ratio)
+	    
+	    /// <summary>Linear interpolation</summary>
+	    /// <param name="start">First point</param>
+	    /// <param name="end">Second point</param>
+	    /// <param name="ratio">Interpolation multiplier between 0 and 1</param>
+	    /// <returns>The interpolated result between the two float values.</returns>
+	    public static double Lerp(double start, double end, double ratio)
         {
-            return a + ratio * (b - a);
+	        // TODO : Clamp ratio to range [0 - 1]
+            return start + ratio * (end - start);
         }
 
+	    /// <summary>Fade function for Perlin noise</summary>
+	    /// <param name="t">Value for fade function</param>
+	    /// <returns>Fade value in t</returns>
         public static double Fade(double t)
         {
             return t * t * t * (t * (t * 6 - 15) + 10); // 6t^5 - 15t^4 + 10t^3
