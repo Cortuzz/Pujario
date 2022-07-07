@@ -3,4 +3,7 @@ Debug
 Release
 Pujario/obj
 Pujario/bin
+Pujario/Content/bin
+Pujario/Content/obj
 .vs
+.idea
