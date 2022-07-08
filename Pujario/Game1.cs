@@ -24,14 +24,13 @@ namespace Pujario
         protected override void Initialize()
         {
             // TODO: Add your initialization logic here
-
+            
             base.Initialize();
         }
 
         protected override void LoadContent()
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
-
             // TODO: use this.Content to load your game content here
         }
 
@@ -48,7 +47,7 @@ namespace Pujario
         protected override void Draw(GameTime gameTime)
         {
             // TODO: Add your drawing code here
-
+            
             base.Draw(gameTime);
         }
     }

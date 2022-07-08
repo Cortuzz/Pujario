@@ -9,12 +9,12 @@ namespace Pujario.Core
     public interface IUpdateable
     {
         public bool CanUpdate { get; set; }
-        
+
         /// <summary>
         /// Update success depends on CanUpdate property or other conditions   
         /// </summary>
-        public void TryUpdate(GameTime gameTime);
-        
+        public void Update(GameTime gameTime);
+
         /// <summary>
         /// Updates anyway
         /// </summary>
@@ -23,15 +23,19 @@ namespace Pujario.Core
 
     public interface IDrawable
     {
-        public void Draw(SpriteBatch spriteBatch);
+        public void Draw(GameTime gameTime, SpriteBatch spriteBatch);
+    }
+    
+    public interface ITicking : IUpdateable, IDrawable
+    {
     }
 
     /// <summary>
     /// Lowest object that can be registered in Engine 
     /// </summary>
-    public interface IBaseObject 
+    public interface IBaseObject
     {
-        public ulong Id { get; }
+        public int Id { get; }
     }
 
     /// <summary>
@@ -39,10 +43,8 @@ namespace Pujario.Core
     /// 
     /// All Actor interacting should use <see cref="WeakReference{IActor}"/> for correct destroying by Engine 
     /// </summary>
-    public interface IActor : IUpdateable, IDrawable, IBaseObject, IComponentProvider, ITransformable
+    public interface IActor : IUpdateable, IDrawable, IBaseObject, IComponentProvider, ITransformable, IDisposable
     {
-        public void Kill();
-
         public event OnOverlap BeginOverlap;
         public event OnOverlap EndOverlap;
     }

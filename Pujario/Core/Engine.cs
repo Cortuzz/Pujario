@@ -1,8 +1,7 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
-using Pujario.Utils;
 
 namespace Pujario.Core
 {
@@ -10,64 +9,36 @@ namespace Pujario.Core
     /// <summary>
     /// The God at your service
     /// </summary>
-    public class Engine : IEngine
+    public class Engine : IEngine, IInstanceManager<IActor>, IInstanceManager<IBaseObject>
     {
-        private Engine()
-        {
-        }
+        private static int _idCounter = Int32.MinValue;
 
         public static Engine Instance { get; } = new Engine();
+        public static int GetNextId() => ++_idCounter;
 
+        // private Dictionary<int, IActor> _actors;
+        private Hashtable _actors;
 
-        public TEngineObject CreateObject<TEngineObject>()
+        // private Dictionary<int, IBaseObject> _objects;
+        private Hashtable _objects;
+        private Dictionary<string, ITicking> _externalInstanceManagers;
+
+        protected Engine()
         {
-            throw new NotImplementedException();
+            _actors = new Hashtable();
+            _objects = new Hashtable();
+            _externalInstanceManagers = new Dictionary<string, ITicking>();
         }
+    }
 
-        public WeakReference<IActor> SpawnActor<TEngineActor>(Transform2D withTransform)
-        {
-            throw new NotImplementedException();
-        }
+    public class EngineGameComponent : GameComponent
+    {
+        private IEngine _engine;
 
-        public IBaseObject FindObjectById(ulong id)
+        public EngineGameComponent(IEngine engine, Game game) : base(game)
         {
-            throw new NotImplementedException();
-        }
-
-        public WeakReference<IActor> FindActorById(ulong id)
-        {
-            throw new NotImplementedException();
-        }
-
-        public WeakReference<IActor> FindActorByClass<TActorClass>()
-        {
-            throw new NotImplementedException();
-        }
-
-        public IEnumerable<WeakReference<IActor>> FindActorsByClass<TActorClass>()
-        {
-            throw new NotImplementedException();
-        }
-
-        public void DestroyActor(IActor actor)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void Draw(SpriteBatch spriteBatch)
-        {
-            throw new NotImplementedException();
-        }
-
-        public bool CanUpdate { get; set; }
-        public void TryUpdate(GameTime gameTime)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void ForceUpdate(GameTime gameTime)
-        {
-            throw new NotImplementedException();
+            _engine = engine;
+            _engine.TargetGame = game;
         }
     }
 }

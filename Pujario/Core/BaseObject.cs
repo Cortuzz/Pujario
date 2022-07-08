@@ -1,12 +1,20 @@
-﻿namespace Pujario.Core
+﻿using System;
+
+namespace Pujario.Core
 {
     public abstract class BaseObject : IBaseObject
     {
-        public ulong Id { get; }
+        protected static Func<int> IdGetter = Engine.GetNextId;
 
-        public BaseObject(ulong id)
+        public int Id { get; } = IdGetter();
+
+        public BaseObject()
         {
-            Id = id;
+        }
+
+        public override int GetHashCode()
+        {
+            return Id;
         }
     }
 }
