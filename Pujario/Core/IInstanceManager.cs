@@ -1,16 +1,22 @@
 ﻿using System;
+using System.Collections.Generic;
+using Pujario.Exceptions.Core;
 
 namespace Pujario.Core
 {
-    public interface IInstanceManager<TInstance> : ITicking where TInstance : class
+    public interface IInstanceManager<TInstance> : ITicking, IEnumerable<TInstance> where TInstance : class
     {
         /// <summary>
         /// Registers instance (strong ref used)  
         /// </summary>
-        /// <returns>instance's hash code</returns>
-        public int RegisterInstance(TInstance instance);
+        public void RegisterInstance(TInstance instance);
+
+        /// <exception cref="UnknownIdentifier">When instance isn't registered</exception>
         public void UnregisterInstance(TInstance instance);
+
+        /// <exception cref="UnknownIdentifier">When hashCode is unknown</exception>
         public void UnregisterInstance(int hashCode);
+
         public WeakReference<TInstance> FindInstance(int hashCode);
     }
 
@@ -23,12 +29,14 @@ namespace Pujario.Core
         /// <param name="alias">Some not unique name</param>
         /// <returns>instance's hash code</returns>
         public int RegisterInstance(TInstance instance, TAlias alias);
-        
+
         /// <summary>
         /// Unregisters all instances associated with this alias
         /// </summary>
         /// <param name="alias"></param>
-        /// <exception cref=""></exception>
+        /// <exception cref="UnknownIdentifier"></exception>
         public void UnregisterAlias(TAlias alias);
+
+        public IEnumerable<WeakReference<TInstance>> GetInstancesByAlias(TAlias alias);
     }
 }

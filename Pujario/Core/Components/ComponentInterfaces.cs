@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 
-namespace Pujario.Core
+namespace Pujario.Core.Components
 {
     /// <summary>
     /// Component that could be set into IComponentProvider or attached to other Components

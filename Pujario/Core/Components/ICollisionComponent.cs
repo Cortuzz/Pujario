@@ -1,4 +1,4 @@
-﻿namespace Pujario.Core.Collisions
+﻿namespace Pujario.Core.Components
 {
     /// <summary>
     /// An Component providing collisions logic

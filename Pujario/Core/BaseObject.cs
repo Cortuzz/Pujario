@@ -1,20 +1,13 @@
-﻿using System;
-
-namespace Pujario.Core
+﻿namespace Pujario.Core
 {
     public abstract class BaseObject : IBaseObject
     {
-        protected static Func<int> IdGetter = Engine.GetNextId;
-
-        public int Id { get; } = IdGetter();
+        public int Id { get; } = Engine.Instance.NextId;
 
         public BaseObject()
         {
         }
 
-        public override int GetHashCode()
-        {
-            return Id;
-        }
+        public override int GetHashCode() => Id;
     }
 }

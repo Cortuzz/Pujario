@@ -2,10 +2,11 @@
 
 namespace Pujario.Core
 {
-    public interface IEngine : IDrawable
+    public interface IEngine
     {
         public Game TargetGame { get; set; }
         public void Draw(GameTime gameTime);
+        public void Update(GameTime gameTime);
 
         public void UseInstanceManager<TInstance>(IInstanceManager<TInstance> instanceManager, in string name)
             where TInstance : class;
