@@ -14,7 +14,6 @@ using System.Diagnostics;
 namespace Pujario.Core.WorldPresentation
 {
     // todo: needs debugging
-    // you can find some duplicated code in methods in this class, that was made for the little performance reasons
     public partial class WorldMapping
     {
         public partial class Chunk
@@ -59,32 +58,56 @@ namespace Pujario.Core.WorldPresentation
             public Point GridPos { get; }
             public Rectangle Area { get; }
 
+            private void _addActor(IActor actor)
+            {
+                _needSorting = actor.UpdateOrder < _located.Last().UpdateOrder;
+                _located.Add(actor);
+
+                actor.TransformChanged += _onInstanceTransformChanged;
+                actor.UpdateOrderChanged += _onUpdateOrderChanged;
+            }
+
+            private void _removeActor(IActor actor)
+            {
+                _located.Remove(actor);
+
+                actor.TransformChanged -= _onInstanceTransformChanged;
+                actor.UpdateOrderChanged -= _onUpdateOrderChanged;
+            }
+
             private void _onInstanceTransformChanged(object sender, EventArgs args)
             {
 #if DEBUG
-                Debug.Assert((IActor)sender != null, "Invalid sender");
+                Debug.Assert((IActor)sender != null && _located.Contains(sender), "Invalid sender");
 #endif
                 _locationChanged.Add((IActor)sender);
+            }
+
+            private void _onUpdateOrderChanged(object sender, EventArgs args)
+            {
+#if DEBUG
+                Debug.Assert((IActor)sender != null && _located.Contains(sender), "Invalid sender");
+#endif
+                var aSender = (IActor)sender;
+                var topBound = _located.Count;
+                for (int i = 0; i < topBound; ++i)
+                {
+                    if (_located[i].Id != aSender.Id) continue;
+                    _needSorting = i != 0 && _located[i - 1].UpdateOrder > aSender.UpdateOrder ||
+                                   i != topBound && _located[i + 1].UpdateOrder < aSender.UpdateOrder;
+                    break;
+                }
             }
 
             private void _handleLocationChange()
             {
                 foreach (var instance in _locationChanged)
                 {
-                    var loc = instance.Transform.Location;
-                    var point = new Point(
-                        (int)Math.Floor(loc.X / _world.ChunkSize),
-                        (int)Math.Floor(loc.Y / _world.ChunkSize));
-
-                    if (GridPos != point)
+                    var anotherChunk = _world[instance.Transform.Location];
+                    if (GridPos != anotherChunk.GridPos)
                     {
-                        var otherChunk = _world[point];
-
-                        _located.Remove(instance);
-                        instance.TransformChanged -= _onInstanceTransformChanged;
-
-                        otherChunk._needSorting = instance.UpdateOrder < otherChunk._located.Last().UpdateOrder;
-                        otherChunk._located.Add(instance);
+                        _removeActor(instance);
+                        anotherChunk._addActor(instance);
                     }
                 }
             }
@@ -102,10 +125,10 @@ namespace Pujario.Core.WorldPresentation
 
             ~Chunk() => Dispose();
 
-            public void PreUpdate()
+            public void Refresh()
             {
                 _alreadyUpdated = false;
-                
+
                 _handleLocationChange();
 
                 _locationChanged.Clear();
@@ -129,21 +152,15 @@ namespace Pujario.Core.WorldPresentation
             public void Draw(GameTime gameTime, SpriteBatch spriteBatch)
             {
                 foreach (var actor in _located)
-                {
                     actor.Draw(gameTime, spriteBatch);
-                }
             }
 
             public IEnumerator<IActor> GetEnumerator()
             {
                 if (_enumerator != null)
-                {
                     _enumerator.Reset();
-                }
                 else
-                {
                     _enumerator = _located.GetEnumerator();
-                }
 
                 return _enumerator;
             }
@@ -159,11 +176,7 @@ namespace Pujario.Core.WorldPresentation
                     "This instance already exists in WorldMapping");
 #endif
                 _world._chunkActors.Add(instance.Id, instance);
-
-                _needSorting = instance.UpdateOrder < _located.Last().UpdateOrder;
-                _located.Add(instance);
-
-                instance.TransformChanged += _onInstanceTransformChanged;
+                _addActor(instance);
             }
 
             public void UnregisterInstance(IActor instance)
@@ -173,8 +186,7 @@ namespace Pujario.Core.WorldPresentation
                     "This instance isn't associated with Chunk");
 #endif
                 _world._chunkActors.Remove(instance.Id);
-                _located.Remove(instance);
-                instance.TransformChanged -= _onInstanceTransformChanged;
+                _removeActor(instance);
             }
 
             public void UnregisterInstance(int hashCode)
@@ -184,8 +196,7 @@ namespace Pujario.Core.WorldPresentation
                 Debug.Assert(instance != null && Area.Contains(instance.Transform.Location),
                     "This instance isn't associated with Chunk");
 #endif
-                _located.Remove(instance);
-                instance.TransformChanged -= _onInstanceTransformChanged;
+                _removeActor(instance);
             }
 
             public WeakReference<IActor> FindInstance(int hashCode)
@@ -194,11 +205,11 @@ namespace Pujario.Core.WorldPresentation
                 return new WeakReference<IActor>(
                     result != null && Area.Contains(result.Transform.Location) ? result : null);
             }
-            
+
             public void Dispose()
             {
                 if (_disposed) return;
-                
+
                 _handleLocationChange();
                 foreach (var instance in _located)
                 {
@@ -212,7 +223,7 @@ namespace Pujario.Core.WorldPresentation
                 _enumerator = null;
                 _disposed = true;
                 _enabled = false;
-                
+
                 GC.SuppressFinalize(this);
             }
 

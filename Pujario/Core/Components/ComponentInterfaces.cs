@@ -21,13 +21,14 @@ namespace Pujario.Core.Components
         /// Could be null if it haven't been attached
         /// </summary>
         public WeakReference<IComponentProvider> Owner { get; }
+
         public HashSet<IComponent> ChildComponents { get; }
 
         /// <summary>
         /// Attach other component to this
         /// </summary>
         public void Attach(IComponent other);
-        
+
         /// <summary>
         /// Detach other component to this
         /// </summary>
@@ -37,8 +38,11 @@ namespace Pujario.Core.Components
     public interface IComponentProvider
     {
         public IComponent RootComponent { get; set; }
-
+        
         public WeakReference<TClass> FindComponentByClass<TClass>() where TClass : class;
+        
+        // todo: resolve that thoughts 
+        //      it could be correct if it return Enumerator, not a collection which must be allocated 
         public IEnumerable<WeakReference<TClass>> FindComponentsByClass<TClass>() where TClass : class;
 
         public WeakReference<IComponent> FindComponentById(ulong id);

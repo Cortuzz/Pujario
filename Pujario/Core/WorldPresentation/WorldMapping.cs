@@ -49,24 +49,28 @@ namespace Pujario.Core.WorldPresentation
         public Chunk[,] Grid { get; private set; }
 
         /// <summary>
-        /// Chunk from grid position
+        /// Chunk from grid position related to zero chunk
         /// </summary>
-        /// <param name="y"></param>, <param name="x"></param> could be negative, related to zero chunk
+        /// <param name="y"></param>, <param name="x"></param> can be negative
         public Chunk this[int y, int x] => Grid[_zeroChunkPos.Y + y, _zeroChunkPos.X + x];
-
+        
+        /// <summary>
+        /// same to <see cref="WorldMapping.this[int, int]"/>
+        /// </summary>
         public Chunk this[in Point p] => Grid[_zeroChunkPos.Y + p.Y, _zeroChunkPos.X + p.X];
 
         /// <summary>
         /// Chunk from world location
         /// </summary>
-        public Chunk this[in Vector2 location] => Grid[_zeroChunkPos.Y + (int)location.Y / ChunkSize,
-            _zeroChunkPos.X + (int)location.X / ChunkSize];
+        public Chunk this[in Vector2 location] => Grid[_zeroChunkPos.Y + (int)Math.Floor(location.Y / ChunkSize),
+            _zeroChunkPos.X + (int)Math.Floor(location.X / ChunkSize)];
 
         public WorldMapping(int chunkSize, Point worldSize, Point zeroChunkPos = default)
         {
             ChunkSize = chunkSize;
             _zeroChunkPos = zeroChunkPos;
-            Grid = new Chunk[worldSize.Y, worldSize.X];
+            // Grid = new Chunk[worldSize.Y, worldSize.X];
+            ResizeGrid(worldSize, Rectangle.Empty, Point.Zero);
             _chunkActors = new Dictionary<int, IActor>(Engine.Instance.Config.DefaultBufferSize);
             TickBeacons = new List<ITickBeacon>(Engine.Instance.Config.DefaultBufferSize);
         }
@@ -90,7 +94,7 @@ namespace Pujario.Core.WorldPresentation
             {
                 for (; cur.Y < newSize.Y; ++cur.Y, ++cur.Y, ++srcCur.Y)
                 {
-                    // ReSharper disable once PossiblyImpureMethodCallOnReadonlyVariable; stupid one .Contains can't mutate it  
+                    // ReSharper disable once PossiblyImpureMethodCallOnReadonlyVariable; stupid one .Contains() can't mutate it  
                     if (destRect.Contains(cur) && srcRect.Contains(srcCur))
                         grid[cur.Y, cur.X] = Grid[srcCur.Y, srcCur.X];
                     else
@@ -110,7 +114,10 @@ namespace Pujario.Core.WorldPresentation
                 foreach (var chunk in beacon.Select(this))
                 {
                     if (chunk.Enabled)
+                    {
+                        chunk.Refresh();
                         chunk.Update(gameTime);
+                    }
                 }
             }
         }

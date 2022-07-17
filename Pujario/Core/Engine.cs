@@ -19,7 +19,7 @@ namespace Pujario.Core
         private WeakReference<ICamera> _camera;
         private SpriteBatch _spriteBatch;
 
-        public EngineConfig Config = default;
+        public EngineConfig Config { get; protected set; }
 
         public Dictionary<string, ITicking> InstanceManagers { get; private set; }
 
@@ -76,7 +76,7 @@ namespace Pujario.Core
             _camera.SetTarget(camera);
             InstanceManagers = new Dictionary<string, ITicking>(Config.DefaultBufferSize);
             _orderedInstanceManagers = new List<ITicking>(Config.DefaultBufferSize);
-            WorldMapping = new WorldMapping(Config.WorldChunkSize, Config.DefaultWorldSize);
+            WorldMapping = new WorldMapping(Config.WorldChunkSize, Config.DefaultWorldSize) { Enabled = true };
         }
 
         public void Draw(GameTime gameTime)
@@ -110,7 +110,7 @@ namespace Pujario.Core
             foreach (var node in InstanceManagers)
             {
                 if (node.Value is { Enabled: true })
-                    node.Value.Draw(gameTime, _spriteBatch);
+                    node.Value.Update(gameTime);
             }
         }
 
@@ -136,18 +136,39 @@ namespace Pujario.Core
             else throw new KeyNotFoundException("Unknown instance manager");
 #endif
         }
+
+        private IActor _spawnActor(IActorFabric fabric, in Transform2D transform)
+        {
+            var actor = fabric.CreateActor();
+            actor.Transform = transform;
+            WorldMapping[transform.Location].RegisterInstance(actor);
+            return actor;
+        }
+
+        public void SpawnActor(IActorFabric fabric, in Transform2D transform, out WeakReference<IActor> result) =>
+            result = new WeakReference<IActor>(_spawnActor(fabric, transform));
+
+        public void SpawnActor(IActorFabric fabric, in Transform2D transform) => _spawnActor(fabric, transform);
     }
 
-
-    public class EngineGameComponent : GameComponent
+    /// <summary>
+    /// Can be used for attaching to <see cref="Game"/>, and auto updating/drawing
+    /// </summary>
+    public class EngineGameComponent : DrawableGameComponent
     {
         private readonly IEngine _engine;
 
-        public EngineGameComponent(IEngine engine, Game game) : base(game) => _engine = engine;
-
-        public override void Update(GameTime gameTime)
+        public EngineGameComponent(IEngine engine, Game game) : base(game)
         {
-            _engine.Update(gameTime);
+            _engine = engine;
+            Enabled = true;
+            Visible = true;
+            UpdateOrder = int.MinValue;
+            DrawOrder = int.MinValue;
         }
+
+        public override void Update(GameTime gameTime) => _engine.Update(gameTime);
+
+        public override void Draw(GameTime gameTime) => _engine.Draw(gameTime);
     }
 }

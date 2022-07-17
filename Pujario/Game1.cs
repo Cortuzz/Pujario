@@ -19,13 +19,22 @@ namespace Pujario
             _graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
-            
         }
 
         protected override void Initialize()
         {
-            // TODO: Add your initialization logic here
-            
+            Engine.Instance.Configure(
+                new EngineConfig
+                {
+                    DefaultBufferSize = 10,
+                    DefaultWorldSize = new Point(10, 10),
+                    WorldChunkSize = 256
+                },
+                this
+            );
+
+            // if we use that, we don't need to call Engine in Update/Draw in the Game class 
+            Components.Add(new EngineGameComponent(Engine.Instance, this));
             base.Initialize();
         }
 
@@ -36,18 +45,15 @@ namespace Pujario
 
         protected override void Update(GameTime gameTime)
         {
-            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
+            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed ||
+                Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
 
-            // TODO: Add your update logic here
-            
             base.Update(gameTime);
         }
 
         protected override void Draw(GameTime gameTime)
         {
-            // TODO: Add your drawing code here
-            
             base.Draw(gameTime);
         }
     }

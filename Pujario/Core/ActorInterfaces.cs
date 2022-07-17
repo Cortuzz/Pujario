@@ -34,4 +34,12 @@ namespace Pujario.Core
         public event OnOverlap BeginOverlap;
         public event OnOverlap EndOverlap;
     }
+
+    /// <summary>
+    /// An instance builder, that can be used by engine in spawning  
+    /// </summary>
+    public interface IActorFabric
+    {
+        public IActor CreateActor();
+    }
 }

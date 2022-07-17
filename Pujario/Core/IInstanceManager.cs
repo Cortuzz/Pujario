@@ -27,8 +27,7 @@ namespace Pujario.Core
         /// </summary>
         /// <param name="instance"></param>
         /// <param name="alias">Some not unique name</param>
-        /// <returns>instance's hash code</returns>
-        public int RegisterInstance(TInstance instance, TAlias alias);
+        public void RegisterInstance(TInstance instance, TAlias alias);
 
         /// <summary>
         /// Unregisters all instances associated with this alias
