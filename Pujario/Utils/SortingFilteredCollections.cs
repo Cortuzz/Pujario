@@ -4,7 +4,16 @@ using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace Pujario.Utils
-{
+{    
+    public enum CollectionMode : byte
+    {
+        /// <summary>Use processed collection</summary> 
+        Processed,
+
+        /// <summary>Use raw collection, containing all the items</summary>
+        Raw,
+    }
+    
     /// <summary>
     /// An collection presents similar behavior to "Microsoft.Xna.Framework.Game.SortingFilteringCollection[T]"/> which is internal.
     ///
@@ -13,15 +22,6 @@ namespace Pujario.Utils
     /// <typeparam name="T">Item type</typeparam>
     public class SortingFilteredCollectionLite<T> : ICollection<T>
     {
-        public enum CollectionMode : byte
-        {
-            /// <summary>Use processed collection</summary> 
-            Processed,
-
-            /// <summary>Use raw collection, containing all the items</summary>
-            Raw,
-        }
-
         public class Enumerator : IEnumerator<T>
         {
             private readonly SortingFilteredCollectionLite<T> _collection;
@@ -44,8 +44,6 @@ namespace Pujario.Utils
 
             public bool MoveNext()
             {
-                Debug.Assert(!IsDisposed, "Enumerator already disposed");
-
                 if (++_currantIndex < _collection._filteredItemsCount)
                 {
                     Current = _collection._items[_currantIndex];
@@ -275,15 +273,6 @@ namespace Pujario.Utils
     /// <typeparam name="T">Item type</typeparam>
     public class SortingFilteredCollection<T> : ICollection<T>
     {
-        public enum CollectionMode : byte
-        {
-            /// <summary>Use processed collection</summary> 
-            Processed,
-
-            /// <summary>Use raw collection, containing all the items</summary>
-            Raw,
-        }
-
         private readonly IComparer<T> _sortingComparer;
         private readonly Predicate<T> _filterPredicate;
         private readonly Action<T, EventHandler<EventArgs>> _sortFactorChangedSubscribe;

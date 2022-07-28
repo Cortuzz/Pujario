@@ -5,10 +5,7 @@ using System.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Pujario.Utils;
-
-#if DEBUG
 using System.Diagnostics;
-#endif
 
 
 namespace Pujario.Core.WorldPresentation
@@ -18,10 +15,9 @@ namespace Pujario.Core.WorldPresentation
     {
         public partial class Chunk
         {
-            private WorldMapping _world;
+            private readonly WorldMapping _world;
             private HashSet<IActor> _locationChanged;
             private List<IActor> _located;
-            private IEnumerator<IActor> _enumerator;
 
             private int _updateOrder;
             private bool _enabled = true;
@@ -29,7 +25,7 @@ namespace Pujario.Core.WorldPresentation
             private bool _needSorting;
             private bool _disposed;
 
-            public virtual bool Enabled
+            public bool Enabled
             {
                 get => _enabled;
                 set
@@ -42,7 +38,7 @@ namespace Pujario.Core.WorldPresentation
                 }
             }
 
-            public virtual int UpdateOrder
+            public int UpdateOrder
             {
                 get => _updateOrder;
                 set
@@ -55,13 +51,15 @@ namespace Pujario.Core.WorldPresentation
                 }
             }
 
+            public bool Visible { get; set; }
+
             public Point GridPos { get; }
             public Rectangle Area { get; }
 
             private void _addActor(IActor actor)
             {
-                _needSorting = actor.UpdateOrder < _located.Last().UpdateOrder;
                 _located.Add(actor);
+                _needSorting = actor.UpdateOrder < _located.Last().UpdateOrder;
 
                 actor.TransformChanged += _onInstanceTransformChanged;
                 actor.UpdateOrderChanged += _onUpdateOrderChanged;
@@ -77,17 +75,13 @@ namespace Pujario.Core.WorldPresentation
 
             private void _onInstanceTransformChanged(object sender, EventArgs args)
             {
-#if DEBUG
                 Debug.Assert((IActor)sender != null && _located.Contains(sender), "Invalid sender");
-#endif
                 _locationChanged.Add((IActor)sender);
             }
 
             private void _onUpdateOrderChanged(object sender, EventArgs args)
             {
-#if DEBUG
                 Debug.Assert((IActor)sender != null && _located.Contains(sender), "Invalid sender");
-#endif
                 var aSender = (IActor)sender;
                 var topBound = _located.Count;
                 for (int i = 0; i < topBound; ++i)
@@ -140,10 +134,7 @@ namespace Pujario.Core.WorldPresentation
                 if (_alreadyUpdated) return;
                 foreach (var actor in _located)
                 {
-                    if (actor.Enabled)
-                    {
-                        actor.Update(gameTime);
-                    }
+                    if (actor.Enabled) actor.Update(gameTime);
                 }
 
                 _alreadyUpdated = true;
@@ -155,36 +146,23 @@ namespace Pujario.Core.WorldPresentation
                     actor.Draw(gameTime, spriteBatch);
             }
 
-            public IEnumerator<IActor> GetEnumerator()
-            {
-                if (_enumerator != null)
-                    _enumerator.Reset();
-                else
-                    _enumerator = _located.GetEnumerator();
-
-                return _enumerator;
-            }
-
-            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+            public IEnumerator<IActor> GetEnumerator() => ((IEnumerable<IActor>)_located).GetEnumerator();
+            IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable)_located).GetEnumerator();
 
             public void RegisterInstance(IActor instance)
             {
-#if DEBUG
                 Debug.Assert(Area.Contains(instance.Transform.Location),
                     "This instance isn't associated with Chunk");
                 Debug.Assert(!_world._chunkActors.ContainsKey(instance.Id),
                     "This instance already exists in WorldMapping");
-#endif
                 _world._chunkActors.Add(instance.Id, instance);
                 _addActor(instance);
             }
 
             public void UnregisterInstance(IActor instance)
             {
-#if DEBUG
                 Debug.Assert(Area.Contains(instance.Transform.Location) && _located.Contains(instance),
                     "This instance isn't associated with Chunk");
-#endif
                 _world._chunkActors.Remove(instance.Id);
                 _removeActor(instance);
             }
@@ -192,10 +170,8 @@ namespace Pujario.Core.WorldPresentation
             public void UnregisterInstance(int hashCode)
             {
                 _world._chunkActors.Remove(hashCode, out var instance);
-#if DEBUG
                 Debug.Assert(instance != null && Area.Contains(instance.Transform.Location),
                     "This instance isn't associated with Chunk");
-#endif
                 _removeActor(instance);
             }
 
@@ -219,8 +195,6 @@ namespace Pujario.Core.WorldPresentation
 
                 _located = null;
                 _locationChanged = null;
-                _enumerator.Dispose();
-                _enumerator = null;
                 _disposed = true;
                 _enabled = false;
 

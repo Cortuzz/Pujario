@@ -14,10 +14,8 @@ namespace Pujario.Core
         private bool _enabled;
         private int _updateOrder;
         protected Transform2D _transform;
-        protected Actor(IInstanceManager<IActor> manager)
-        {
-            manager.RegisterInstance(this);
-        }
+
+        protected Actor(IInstanceManager<IActor> manager) => manager.RegisterInstance(this);
 
         public abstract void Update(GameTime gameTime);
         public abstract void Draw(GameTime gameTime, SpriteBatch spriteBatch);
@@ -60,7 +58,9 @@ namespace Pujario.Core
             }
         }
 
-        public abstract IComponent RootComponent { get; set; }
+        public bool Visible { get; set; }
+
+        public IComponent RootComponent { get; set; }
         public abstract void ApplyTransform(in Transform2D deltaTransform);
         public abstract WeakReference<TClass> FindComponentByClass<TClass>() where TClass : class;
         public abstract IEnumerable<WeakReference<TClass>> FindComponentsByClass<TClass>() where TClass : class;

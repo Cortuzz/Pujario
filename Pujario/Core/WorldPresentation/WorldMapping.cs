@@ -7,18 +7,20 @@ namespace Pujario.Core.WorldPresentation
 {
     public partial class WorldMapping : ITicking
     {
-        public partial class Chunk : IInstanceManager<IActor>, IDisposable
+        public partial class Chunk : BaseObject, IInstanceManager<IActor>, IDisposable
         {
         }
 
-        private Dictionary<int, IActor> _chunkActors; // storage of Actors, which will be used by associated Chunks
+        private readonly Dictionary<int, IActor> _chunkActors;
+        // storage of Actors, which will be used by associated Chunks
+        // that collection seems to be useless and could be removed in future 
 
         private Point _zeroChunkPos;
         private int _updateOrder;
         private bool _enabled;
 
         public readonly int ChunkSize;
-        public List<ITickBeacon> TickBeacons;
+        public readonly ITickBeaconSystem TickBeaconSystem;
 
         public bool Enabled
         {
@@ -46,6 +48,8 @@ namespace Pujario.Core.WorldPresentation
             }
         }
 
+        public bool Visible { get; set; }
+
         public Chunk[,] Grid { get; private set; }
 
         /// <summary>
@@ -53,7 +57,7 @@ namespace Pujario.Core.WorldPresentation
         /// </summary>
         /// <param name="y"></param>, <param name="x"></param> can be negative
         public Chunk this[int y, int x] => Grid[_zeroChunkPos.Y + y, _zeroChunkPos.X + x];
-        
+
         /// <summary>
         /// same to <see cref="WorldMapping.this[int, int]"/>
         /// </summary>
@@ -65,22 +69,25 @@ namespace Pujario.Core.WorldPresentation
         public Chunk this[in Vector2 location] => Grid[_zeroChunkPos.Y + (int)Math.Floor(location.Y / ChunkSize),
             _zeroChunkPos.X + (int)Math.Floor(location.X / ChunkSize)];
 
-        public WorldMapping(int chunkSize, Point worldSize, Point zeroChunkPos = default)
+        /// <param name="chunkSize">size of the chunk</param>
+        /// <param name="worldSize">Initial world size</param>
+        /// <param name="tickBeaconSystemFabricMethod">An delegate that constructs new <see cref="ITickBeaconSystem"/></param>
+        /// <param name="zeroChunkPos">Coordinate reference point</param>
+        public WorldMapping(int chunkSize, Point worldSize, Func<ITickBeaconSystem> tickBeaconSystemFabricMethod,
+            Point zeroChunkPos = default)
         {
             ChunkSize = chunkSize;
             _zeroChunkPos = zeroChunkPos;
             // Grid = new Chunk[worldSize.Y, worldSize.X];
             ResizeGrid(worldSize, Rectangle.Empty, Point.Zero);
+
             _chunkActors = new Dictionary<int, IActor>(Engine.Instance.Config.DefaultBufferSize);
-            TickBeacons = new List<ITickBeacon>(Engine.Instance.Config.DefaultBufferSize);
+            TickBeaconSystem = tickBeaconSystemFabricMethod();
         }
 
         ~WorldMapping()
         {
-            foreach (var chunk in Grid)
-            {
-                chunk.Dispose();
-            }
+            foreach (var chunk in Grid) chunk.Dispose();
         }
 
         public void ResizeGrid(in Point newSize, in Rectangle srcRect, in Point destPos)
@@ -108,30 +115,16 @@ namespace Pujario.Core.WorldPresentation
 
         public void Update(GameTime gameTime)
         {
-            foreach (var beacon in TickBeacons)
-            {
-                if (!beacon.ForUpdating) continue;
-                foreach (var chunk in beacon.Select(this))
-                {
-                    if (chunk.Enabled)
-                    {
-                        chunk.Refresh();
-                        chunk.Update(gameTime);
-                    }
-                }
-            }
+            using var e = TickBeaconSystem.GetUpdateEnumerator(this);
+            while (e.MoveNext())
+                e.Current?.Update(gameTime);
         }
 
         public void Draw(GameTime gameTime, SpriteBatch spriteBatch)
         {
-            foreach (var beacon in TickBeacons)
-            {
-                if (!beacon.ForDrawing) continue;
-                foreach (var chunk in beacon.Select(this))
-                {
-                    chunk.Draw(gameTime, spriteBatch);
-                }
-            }
+            using var e = TickBeaconSystem.GetDrawEnumerator(this);
+            while (e.MoveNext())
+                e.Current?.Draw(gameTime, spriteBatch);
         }
 
         public event EventHandler<EventArgs> EnabledChanged;

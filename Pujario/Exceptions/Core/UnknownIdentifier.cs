@@ -2,6 +2,6 @@
 {
     public class UnknownIdentifier : System.Exception
     {
-        UnknownIdentifier(string message = null) : base(message) {}
+        public UnknownIdentifier(string message = null) : base(message) {}
     }
 }

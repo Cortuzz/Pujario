@@ -7,11 +7,16 @@ using Pujario.Core.Components;
 
 namespace Pujario.Core
 {
+    /// <summary>
+    ///  This replaces <see cref="Microsoft.Xna.Framework.IDrawable"/>.
+    /// For draw order might be used <see cref="IUpdateable.UpdateOrder"/> or other rules   
+    /// </summary>
     public interface IDrawable
     {
+        public bool Visible { get; set; }
         public void Draw(GameTime gameTime, SpriteBatch spriteBatch);
     }
-    
+
     public interface ITicking : IUpdateable, IDrawable
     {
     }

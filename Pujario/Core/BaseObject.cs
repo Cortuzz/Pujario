@@ -4,10 +4,6 @@
     {
         public int Id { get; } = Engine.Instance.NextId;
 
-        public BaseObject()
-        {
-        }
-
         public override int GetHashCode() => Id;
     }
 }
