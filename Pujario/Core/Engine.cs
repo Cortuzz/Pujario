@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Pujario.Core.Components;
+using Pujario.Core.Input;
 using Pujario.Core.WorldPresentation;
 using Pujario.Utils;
 
@@ -13,15 +14,13 @@ namespace Pujario.Core
     /// </summary>
     public class Engine : IEngine
     {
+        public static Func<float, float, bool> FloatEquality;
+
         private int _idCounter = Int32.MinValue; // podlyanka v code )) only 2^32 ids can be generated 
         private Game _targetGame;
         private List<ITicking> _orderedInstanceManagers;
         private WeakReference<ICamera> _camera;
         private SpriteBatch _spriteBatch;
-
-        public EngineConfig Config { get; protected set; }
-
-        public Dictionary<string, ITicking> InstanceManagers { get; private set; }
 
         public Game TargetGame
         {
@@ -33,7 +32,10 @@ namespace Pujario.Core
             }
         }
 
-        public WorldMapping WorldMapping { get; protected set; }
+        public EngineConfig Config { get; private set; }
+        public Dictionary<string, ITicking> InstanceManagers { get; private set; }
+        public WorldMapping WorldMapping { get; private set; }
+        public InputManager InputManager { get; private set; }
 
         public int NextId => ++_idCounter;
 
@@ -61,7 +63,7 @@ namespace Pujario.Core
 
         public static Engine Instance { get; } = new Engine();
 
-        protected Engine()
+        private Engine()
         {
             _camera = new WeakReference<ICamera>(null);
         }
@@ -69,14 +71,20 @@ namespace Pujario.Core
         /// <summary>
         /// Necessary constructing of the Engine  
         /// </summary>
-        public void Configure(in EngineConfig config, Game targetGame, ICamera camera = null)
+        public void Configure(in EngineConfig config, Game targetGame, InputManager inputManager,
+            Func<ITickBeaconSystem> tickBeaconSystemFabricMethod, ICamera camera = null)
         {
             Config = config;
             TargetGame = targetGame;
+            InputManager = inputManager;
             _camera.SetTarget(camera);
             InstanceManagers = new Dictionary<string, ITicking>(Config.DefaultBufferSize);
             _orderedInstanceManagers = new List<ITicking>(Config.DefaultBufferSize);
-            WorldMapping = new WorldMapping(Config.WorldChunkSize, Config.DefaultWorldSize) { Enabled = true };
+            WorldMapping = new WorldMapping(Config.WorldChunkSize, Config.DefaultWorldSize,
+                    tickBeaconSystemFabricMethod) { Enabled = true };
+
+            FloatEquality = (f, f1) => Math.Abs(f - f1) < Config.FloatTolerance;
+            InputManager.FloatEquality = FloatEquality;
         }
 
         public void Draw(GameTime gameTime)
@@ -105,6 +113,7 @@ namespace Pujario.Core
 
         public void Update(GameTime gameTime)
         {
+            InputManager.RaiseEvents();
             if (WorldMapping.Enabled) WorldMapping.Update(gameTime);
 
             foreach (var node in InstanceManagers)

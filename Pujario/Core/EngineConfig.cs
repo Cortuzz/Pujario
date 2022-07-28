@@ -10,5 +10,6 @@ namespace Pujario.Core
         public SpriteSortMode DrawingSortMode;
         public int WorldChunkSize;
         public Point DefaultWorldSize;
+        public float FloatTolerance;
     }
 }

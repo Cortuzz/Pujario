@@ -1,12 +1,9 @@
-﻿using System;
-using System.Diagnostics;
-using System.Linq;
+﻿using System.Collections.Generic;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Pujario.Core;
-using Pujario.NoiseGeneration;
-using Pujario.NoiseGeneration.Interfaces;
+using Pujario.Core.Input;
+using Pujario.Core.WorldPresentation;
 
 namespace Pujario
 {
@@ -28,9 +25,17 @@ namespace Pujario
                 {
                     DefaultBufferSize = 10,
                     DefaultWorldSize = new Point(10, 10),
-                    WorldChunkSize = 256
+                    WorldChunkSize = 256,
+                    FloatTolerance = 1e-5f,
                 },
-                this
+                this,
+                new InputManager(
+                    new Dictionary<string, InputCombination>(new[]
+                    {
+                        KeyValuePair.Create("Forward", new InputCombination(null, new[] { Keys.W, Keys.Up }))
+                    }),
+                    new[] { typeof(Actor) }),
+                () => new SimpleTickBeaconSystem()
             );
 
             // if we use that, we don't need to call Engine in Update/Draw in the Game class 
