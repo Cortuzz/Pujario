@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -16,11 +17,12 @@ namespace Pujario.Core
     {
         public static Func<float, float, bool> FloatEquality;
 
-        private int _idCounter = Int32.MinValue; // podlyanka v code )) only 2^32 ids can be generated 
+        private int _idCounter = int.MinValue; // podlyanka v code )) only 2^32 ids can be generated 
         private Game _targetGame;
         private List<ITicking> _orderedInstanceManagers;
         private WeakReference<ICamera> _camera;
         private SpriteBatch _spriteBatch;
+        private GraphicsDeviceManager _gManager;
 
         public Game TargetGame
         {
@@ -71,16 +73,17 @@ namespace Pujario.Core
         /// <summary>
         /// Necessary constructing of the Engine  
         /// </summary>
-        public void Configure(in EngineConfig config, Game targetGame, InputManager inputManager,
+        public void Configure(in EngineConfig config, Game targetGame, GraphicsDeviceManager gManager, InputManager inputManager,
             Func<ITickBeaconSystem> tickBeaconSystemFabricMethod, ICamera camera = null)
         {
             Config = config;
             TargetGame = targetGame;
             InputManager = inputManager;
+            _gManager = gManager;
             _camera.SetTarget(camera);
             InstanceManagers = new Dictionary<string, ITicking>(Config.DefaultBufferSize);
             _orderedInstanceManagers = new List<ITicking>(Config.DefaultBufferSize);
-            WorldMapping = new WorldMapping(Config.WorldChunkSize, Config.DefaultWorldSize,
+            WorldMapping = new WorldMapping(Config.WorldChunkSize, new Point(20, 20),
                     tickBeaconSystemFabricMethod) { Enabled = true };
 
             FloatEquality = (f, f1) => Math.Abs(f - f1) < Config.FloatTolerance;
@@ -89,10 +92,24 @@ namespace Pujario.Core
 
         public void Draw(GameTime gameTime)
         {
+#if DEBUG
+            if (gameTime.TotalGameTime.Seconds % 2 == 1)
+                Debug.WriteLine("Draw FPS - " + (1 / gameTime.ElapsedGameTime.TotalSeconds).ToString());
+#endif
             Matrix? transformMatrix = null;
             if (_camera.TryGetTarget(out var camera))
-                transformMatrix = camera.TransformMatrix;
+            {
+                if (_gManager.PreferredBackBufferHeight != camera.Viewport.Height 
+                    || _gManager.PreferredBackBufferWidth != camera.Viewport.Width)
+                {
+                    camera.Viewport = new Viewport(camera.Viewport.X, camera.Viewport.Y,
+                        _gManager.PreferredBackBufferWidth, _gManager.PreferredBackBufferHeight);
+                }
 
+                transformMatrix = camera.TransformMatrix;
+            }
+
+            _gManager.GraphicsDevice.Clear(Color.DarkGray);
             _spriteBatch.Begin(
                 Config.DrawingSortMode,
                 BlendState,
@@ -113,6 +130,10 @@ namespace Pujario.Core
 
         public void Update(GameTime gameTime)
         {
+#if DEBUG
+            if (gameTime.TotalGameTime.Seconds % 2 == 1)
+                Debug.WriteLine("Update FPS - " + (1 / gameTime.ElapsedGameTime.TotalSeconds).ToString());
+#endif
             InputManager.RaiseEvents();
             if (WorldMapping.Enabled) WorldMapping.Update(gameTime);
 
@@ -146,18 +167,22 @@ namespace Pujario.Core
 #endif
         }
 
-        private IActor _spawnActor(IActorFabric fabric, in Transform2D transform)
+        private IActor _placeActor(IActor actor, in Transform2D transform)
         {
-            var actor = fabric.CreateActor();
             actor.Transform = transform;
-            WorldMapping[transform.Location].RegisterInstance(actor);
+            WorldMapping[transform.Position].RegisterInstance(actor);
             return actor;
         }
 
-        public void SpawnActor(IActorFabric fabric, in Transform2D transform, out WeakReference<IActor> result) =>
-            result = new WeakReference<IActor>(_spawnActor(fabric, transform));
+        public void SpawnActor(Func<IActor> fabricDelegate, in Transform2D transform, out WeakReference<IActor> result) =>
+            result = new WeakReference<IActor>(_placeActor(fabricDelegate(), transform));
 
-        public void SpawnActor(IActorFabric fabric, in Transform2D transform) => _spawnActor(fabric, transform);
+        public void SpawnActor(Func<IActor> fabricDelegate, in Transform2D transform) => _placeActor(fabricDelegate(), transform);
+
+        public void SpawnActor(IActorFabric fabric, in Transform2D transform, out WeakReference<IActor> result) =>
+            result = new WeakReference<IActor>(_placeActor(fabric.CreateActor(), transform));
+
+        public void SpawnActor(IActorFabric fabric, in Transform2D transform) => _placeActor(fabric.CreateActor(), transform);
     }
 
     /// <summary>

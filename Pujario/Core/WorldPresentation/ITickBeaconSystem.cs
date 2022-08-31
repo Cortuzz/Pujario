@@ -1,9 +1,11 @@
 ﻿using System.Collections.Generic;
+using Microsoft.Xna.Framework;
 
 namespace Pujario.Core.WorldPresentation
 {
     public enum TickBeaconMode : byte
     {
+        None = 0b00000000,
         Draw = 0b00000001,
         Update = 0b00000010,
         Any = 0b00000011
@@ -14,8 +16,9 @@ namespace Pujario.Core.WorldPresentation
     /// </summary>
     public interface ITickBeacon
     {
-        TickBeaconMode Mode { get; }
-        IEnumerator<WorldMapping.Chunk> GetSelector(WorldMapping world);
+        public TickBeaconMode Mode { get; set; }
+        public Vector2 Position { get; set; }
+        public IEnumerator<WorldMapping.Chunk> GetSelector(WorldMapping world);
     }
 
     /// <summary>
@@ -27,7 +30,7 @@ namespace Pujario.Core.WorldPresentation
         public void UseBeacon(ITickBeacon beacon);
         public void DisuseBeacon(ITickBeacon beacon);
 
-        public IEnumerator<IActor> GetDrawEnumerator(WorldMapping world);
-        public IEnumerator<IActor> GetUpdateEnumerator(WorldMapping world);
+        public IEnumerator<WorldMapping.Chunk> GetDrawEnumerator(WorldMapping world);
+        public IEnumerator<WorldMapping.Chunk> GetUpdateEnumerator(WorldMapping world);
     }
 }

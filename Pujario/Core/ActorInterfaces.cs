@@ -8,13 +8,17 @@ using Pujario.Core.Components;
 namespace Pujario.Core
 {
     /// <summary>
-    ///  This replaces <see cref="Microsoft.Xna.Framework.IDrawable"/>.
-    /// For draw order might be used <see cref="IUpdateable.UpdateOrder"/> or other rules   
+    ///     This replaces <see cref="Microsoft.Xna.Framework.IDrawable"/>.
     /// </summary>
     public interface IDrawable
     {
-        public bool Visible { get; set; }
+        int DrawOrder { get; }
+        bool Visible { get; }
+
         public void Draw(GameTime gameTime, SpriteBatch spriteBatch);
+
+        event EventHandler<EventArgs> DrawOrderChanged;
+        event EventHandler<EventArgs> VisibleChanged;
     }
 
     public interface ITicking : IUpdateable, IDrawable
@@ -36,8 +40,6 @@ namespace Pujario.Core
     /// </summary>
     public interface IActor : ITicking, IBaseObject, IComponentProvider, ITransformable, IDisposable
     {
-        public event OnOverlap BeginOverlap;
-        public event OnOverlap EndOverlap;
     }
 
     /// <summary>

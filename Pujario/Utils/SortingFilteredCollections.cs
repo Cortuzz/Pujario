@@ -15,7 +15,7 @@ namespace Pujario.Utils
     }
     
     /// <summary>
-    /// An collection presents similar behavior to "Microsoft.Xna.Framework.Game.SortingFilteringCollection[T]"/> which is internal.
+    /// An collection presents similar behavior to "Microsoft.Xna.Framework.Game.SortingFilteringCollection[T]" which is internal.
     ///
     /// Needs n of memory; good when you access collection rarely
     /// </summary>
@@ -108,17 +108,16 @@ namespace Pujario.Utils
         private void _onFilterFactorChanged(object sender, EventArgs args)
         {
             var obj = (T)sender;
-            if (_filterPredicate(obj))
+            if (_filterPredicate(obj)) 
             {
                 _needSorting = true;
                 ++_filteredItemsCount;
+                return;
             }
-            else
-            {
-                _items.Remove(obj);
-                _items.Add(obj);
-                --_filteredItemsCount;
-            }
+
+            _items.Remove(obj);
+            _items.Add(obj);
+            --_filteredItemsCount;
         }
 
         private void _subscribeToItemChanging(T item)

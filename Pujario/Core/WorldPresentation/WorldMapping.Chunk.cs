@@ -10,98 +10,125 @@ using System.Diagnostics;
 
 namespace Pujario.Core.WorldPresentation
 {
-    // todo: needs debugging
     public partial class WorldMapping
     {
-        public partial class Chunk
+        public class Chunk : BaseObject, IInstanceManager<IActor>, IDisposable
         {
             private readonly WorldMapping _world;
-            private HashSet<IActor> _locationChanged;
-            private List<IActor> _located;
+            private HashSet<ActorWrap> _locationChanged;
+            private List<ActorWrap> _located;
 
-            private int _updateOrder;
-            private bool _enabled = true;
             private bool _alreadyUpdated;
             private bool _needSorting;
             private bool _disposed;
+            private readonly Vector2 _halfChunkSize;
+#if DEBUG
+            private readonly Texture2D _debugFrame;
+            private readonly SpriteFont _font;
+#endif
 
+            private bool _enabled = true;
             public bool Enabled
             {
                 get => _enabled;
                 set
                 {
-                    if (_enabled != value)
-                    {
-                        _enabled = value;
-                        EnabledChanged?.Invoke(this, EventArgs.Empty);
-                    }
+                    if (_enabled == value) return;
+                    _enabled = value;
+                    EnabledChanged?.Invoke(this, EventArgs.Empty);
                 }
             }
 
+            private int _updateOrder;
             public int UpdateOrder
             {
                 get => _updateOrder;
                 set
                 {
-                    if (_updateOrder != value)
-                    {
-                        _updateOrder = value;
-                        UpdateOrderChanged?.Invoke(this, EventArgs.Empty);
-                    }
+                    if (_updateOrder == value) return;
+                    _updateOrder = value;
+                    UpdateOrderChanged?.Invoke(this, EventArgs.Empty);
                 }
             }
 
-            public bool Visible { get; set; }
+            private bool _visible = false;
+            public bool Visible
+            {
+                get => _visible;
+                set
+                {
+                    if (_visible == value) return;
+                    _visible = value;
+                    foreach (var item in _located) 
+                        item.IsInVisibleChunk = value;
+                    VisibleChanged?.Invoke(this, EventArgs.Empty);
+                }
+            }
+
+            private int _drawOrder;
+            public int DrawOrder
+            {
+                get => _drawOrder;
+                set
+                {
+                    if (_drawOrder == value) return;
+                    _drawOrder = value;
+                    DrawOrderChanged?.Invoke(this, EventArgs.Empty);
+                }
+            }
 
             public Point GridPos { get; }
             public Rectangle Area { get; }
 
-            private void _addActor(IActor actor)
+            private void _addActor(ActorWrap wrap)
             {
-                _located.Add(actor);
-                _needSorting = actor.UpdateOrder < _located.Last().UpdateOrder;
+                _located.Add(wrap);
+                _needSorting = wrap.Actor.UpdateOrder < _located[^1].Actor.UpdateOrder;
 
-                actor.TransformChanged += _onInstanceTransformChanged;
-                actor.UpdateOrderChanged += _onUpdateOrderChanged;
+                wrap.Actor.TransformChanged += _onInstanceTransformChanged;
+                wrap.Actor.UpdateOrderChanged += _onUpdateOrderChanged;
             }
 
-            private void _removeActor(IActor actor)
+            private void _removeActor(ActorWrap wrap)
             {
-                _located.Remove(actor);
+                _located.Remove(wrap);
 
-                actor.TransformChanged -= _onInstanceTransformChanged;
-                actor.UpdateOrderChanged -= _onUpdateOrderChanged;
+                wrap.Actor.TransformChanged -= _onInstanceTransformChanged;
+                wrap.Actor.UpdateOrderChanged -= _onUpdateOrderChanged;
             }
 
             private void _onInstanceTransformChanged(object sender, EventArgs args)
             {
-                Debug.Assert((IActor)sender != null && _located.Contains(sender), "Invalid sender");
-                _locationChanged.Add((IActor)sender);
+                var actor = sender as IActor;
+                Debug.Assert(actor != null, "Invalid sender");
+                Debug.Assert(_findLocatedActorWrapById(actor.Id, out var wrap), "This instance isn't associated with that Chunk");
+                _locationChanged.Add(wrap);
             }
 
             private void _onUpdateOrderChanged(object sender, EventArgs args)
             {
-                Debug.Assert((IActor)sender != null && _located.Contains(sender), "Invalid sender");
-                var aSender = (IActor)sender;
+                var actor = sender as IActor;
+                Debug.Assert(actor != null, "Invalid sender");
+                Debug.Assert(_findLocatedActorWrapById(actor.Id, out var wrap), "This instance isn't associated with that Chunk");
                 var topBound = _located.Count;
                 for (int i = 0; i < topBound; ++i)
                 {
-                    if (_located[i].Id != aSender.Id) continue;
-                    _needSorting = i != 0 && _located[i - 1].UpdateOrder > aSender.UpdateOrder ||
-                                   i != topBound && _located[i + 1].UpdateOrder < aSender.UpdateOrder;
+                    if (_located[i].Id != actor.Id) continue;
+                    _needSorting = i != 0 && _located[i - 1].Actor.UpdateOrder > actor.UpdateOrder ||
+                                   i != topBound && _located[i + 1].Actor.UpdateOrder < actor.UpdateOrder;
                     break;
                 }
             }
 
             private void _handleLocationChange()
             {
-                foreach (var instance in _locationChanged)
+                foreach (var wrap in _locationChanged)
                 {
-                    var anotherChunk = _world[instance.Transform.Location];
+                    var anotherChunk = _world[wrap.Actor.Transform.Position];
                     if (GridPos != anotherChunk.GridPos)
                     {
-                        _removeActor(instance);
-                        anotherChunk._addActor(instance);
+                        _removeActor(wrap);
+                        anotherChunk._addActor(wrap);
                     }
                 }
             }
@@ -112,9 +139,14 @@ namespace Pujario.Core.WorldPresentation
                 GridPos = gridPos;
                 Area = new Rectangle(gridPos.X * _world.ChunkSize, gridPos.Y * _world.ChunkSize, _world.ChunkSize,
                     _world.ChunkSize);
+                _halfChunkSize = new Vector2(_world.ChunkSize / 2, _world.ChunkSize / 2);
 
-                _locationChanged = new HashSet<IActor>(Engine.Instance.Config.DefaultBufferSize);
-                _located = new List<IActor>(Engine.Instance.Config.DefaultBufferSize);
+                _locationChanged = new HashSet<ActorWrap>(Engine.Instance.Config.DefaultBufferSize);
+                _located = new List<ActorWrap>(Engine.Instance.Config.DefaultBufferSize);
+#if DEBUG
+                _font = Engine.Instance.TargetGame.Content.Load<SpriteFont>("arial");
+                _debugFrame = Engine.Instance.TargetGame.Content.Load<Texture2D>("debugChunkFrameT");
+#endif
             }
 
             ~Chunk() => Dispose();
@@ -126,60 +158,120 @@ namespace Pujario.Core.WorldPresentation
                 _handleLocationChange();
 
                 _locationChanged.Clear();
-                if (_needSorting) _located.Sort(UpdateOrderComparer.Instance);
+                if (_needSorting) _located.Sort(ActorWrapUpdateComparer.Instance);
             }
 
             public void Update(GameTime gameTime)
             {
                 if (_alreadyUpdated) return;
-                foreach (var actor in _located)
+                foreach (var wrap in _located)
                 {
-                    if (actor.Enabled) actor.Update(gameTime);
+                    if (wrap.Actor.Enabled) wrap.Actor.Update(gameTime);
                 }
 
                 _alreadyUpdated = true;
             }
 
-            public void Draw(GameTime gameTime, SpriteBatch spriteBatch)
+            /// <summary>
+            /// Draws only chunk's own stuff 
+            /// </summary>
+            public void HollowDraw(GameTime gameTime, SpriteBatch spriteBatch)
             {
-                foreach (var actor in _located)
-                    actor.Draw(gameTime, spriteBatch);
+#if DEBUG
+                var fBounds = _debugFrame.Bounds;
+                spriteBatch.Draw(
+                    _debugFrame,
+                    (GridPos - _world._zeroChunkPos).ToVector2() * _world.ChunkSize,
+                    null,
+                    Color.White,
+                    0,
+                    Vector2.Zero,
+                    new Vector2(_world.ChunkSize / fBounds.Width, _world.ChunkSize / fBounds.Height),
+                    SpriteEffects.None,
+                    .0f);
+                var posStr = GridPos.ToString();
+                spriteBatch.DrawString(
+                    _font,
+                    posStr,
+                    (GridPos - _world._zeroChunkPos).ToVector2() * _world.ChunkSize + _halfChunkSize - _font.MeasureString(posStr) / 2,
+                    Color.Red,
+                    0,
+                    Vector2.Zero,
+                    1,
+                    SpriteEffects.None,
+                    .0f);
+#endif
             }
 
-            public IEnumerator<IActor> GetEnumerator() => ((IEnumerable<IActor>)_located).GetEnumerator();
-            IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable)_located).GetEnumerator();
+            /// <summary>
+            /// Calls <see cref="HollowDraw(GameTime, SpriteBatch)"/> and draws all nested actors
+            /// </summary>
+            public void Draw(GameTime gameTime, SpriteBatch spriteBatch)
+            {
+                HollowDraw(gameTime, spriteBatch);
+                foreach (var actor in _located)
+                    actor.Actor.Draw(gameTime, spriteBatch);
+            }
+
+            public IEnumerator<IActor> GetEnumerator() => new Enumerator(((IEnumerable<ActorWrap>)_located).GetEnumerator());
+            IEnumerator IEnumerable.GetEnumerator() => new Enumerator(((IEnumerable<ActorWrap>)_located).GetEnumerator());
 
             public void RegisterInstance(IActor instance)
             {
-                Debug.Assert(Area.Contains(instance.Transform.Location),
-                    "This instance isn't associated with Chunk");
-                Debug.Assert(!_world._chunkActors.ContainsKey(instance.Id),
+                var wrap = new ActorWrap(instance);
+                Debug.Assert(Area.Contains(instance.Transform.Position),
+                    "This instance isn't associated with that Chunk");
+                Debug.Assert(!_world._drawOrderedActors.Contains(wrap),
                     "This instance already exists in WorldMapping");
-                _world._chunkActors.Add(instance.Id, instance);
-                _addActor(instance);
+
+                wrap.InitEventListener();
+                _world._drawOrderedActors.Add(wrap);
+                _addActor(wrap);
             }
 
-            public void UnregisterInstance(IActor instance)
+            private bool _findLocatedActorWrapById(int id, out ActorWrap wrap)
             {
-                Debug.Assert(Area.Contains(instance.Transform.Location) && _located.Contains(instance),
-                    "This instance isn't associated with Chunk");
-                _world._chunkActors.Remove(instance.Id);
-                _removeActor(instance);
+                using var e = _world._drawOrderedActors.GetEnumerator(CollectionMode.Raw);
+                while (e.MoveNext())
+                {
+                    if (e.Current.Id != id) continue;
+                    wrap = e.Current;
+                    return true;
+                }
+
+                wrap = null;
+                return false;
             }
+
+            private ActorWrap _findActorWrapById(int id)
+            {
+                using var e = _world._drawOrderedActors.GetEnumerator(CollectionMode.Raw);
+                while (e.MoveNext())
+                    if (e.Current.Id == id) return e.Current;
+
+                return null;
+            }
+
+            public void UnregisterInstance(IActor instance) => UnregisterInstance(instance.Id);
 
             public void UnregisterInstance(int hashCode)
             {
-                _world._chunkActors.Remove(hashCode, out var instance);
-                Debug.Assert(instance != null && Area.Contains(instance.Transform.Location),
-                    "This instance isn't associated with Chunk");
-                _removeActor(instance);
+                var wrap = _findActorWrapById(hashCode);
+                if (wrap == null) return;
+
+                Debug.Assert(Area.Contains(wrap.Actor.Transform.Position) && _located.Contains(wrap),
+                    "This instance isn't associated with that Chunk");
+
+                _world._drawOrderedActors.Remove(wrap);
+                wrap.Dispose();
+                _removeActor(wrap);
             }
 
             public WeakReference<IActor> FindInstance(int hashCode)
             {
-                _world._chunkActors.TryGetValue(hashCode, out var result);
+                var wrap = _findActorWrapById(hashCode);
                 return new WeakReference<IActor>(
-                    result != null && Area.Contains(result.Transform.Location) ? result : null);
+                    wrap != null && Area.Contains(wrap.Actor.Transform.Position) ? wrap.Actor : null);
             }
 
             public void Dispose()
@@ -189,7 +281,12 @@ namespace Pujario.Core.WorldPresentation
                 _handleLocationChange();
                 foreach (var instance in _located)
                 {
-                    _world._chunkActors.Remove(instance.Id);
+                    var wrap = _findActorWrapById(instance.Id);
+                    if (wrap != null)
+                    {
+                        _world._drawOrderedActors.Remove(wrap);
+                        wrap.Dispose();
+                    }
                     instance.Dispose();
                 }
 
@@ -203,6 +300,8 @@ namespace Pujario.Core.WorldPresentation
 
             public event EventHandler<EventArgs> EnabledChanged;
             public event EventHandler<EventArgs> UpdateOrderChanged;
+            public event EventHandler<EventArgs> DrawOrderChanged;
+            public event EventHandler<EventArgs> VisibleChanged;
         }
     }
 }
