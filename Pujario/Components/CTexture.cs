@@ -33,16 +33,27 @@ namespace Pujario.Components
             }
         }
 
-        public Texture2D Texture { get; set; }
+        private Texture2D _texture;
+        public Texture2D Texture
+        {
+            get => _texture;
+            set
+            {
+                SourceRectangle = value.Bounds;
+                _texture = value;
+            }
+        }
+
         public Rectangle SourceRectangle { get; set; }
-        public Color Color { get; set; }
+        public Color Color { get; set; } = Color.White;
         public SpriteEffects SpriteEffects { get; set; }
 
 
-        public CTexture([NotNull] Texture2D texture)
+        public CTexture([NotNull] Texture2D texture) => Texture = texture;
+        public CTexture([NotNull] Texture2D texture, in Rectangle sourceRectangle)
         {
-            Texture = texture;
-            SourceRectangle = texture.Bounds;
+            _texture = texture;
+            SourceRectangle = sourceRectangle;
         }
 
         public CTexture(string assetName) 
@@ -50,17 +61,16 @@ namespace Pujario.Components
 
         public void Draw(GameTime gameTime, SpriteBatch spriteBatch)
         {
-            var rnd = new Random();
             spriteBatch.Draw(
-                Texture,
+                _texture,
                 _transform.Position,
                 SourceRectangle,
-                Color.White,
+                Color,
                 _transform.Rotation,
                 _transform.Origin,
                 _transform.Scale,
                 SpriteEffects,
-                (float)rnd.NextDouble());
+                .5f);
         }
 
         public override void Initialize()

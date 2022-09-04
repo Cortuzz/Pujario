@@ -10,8 +10,6 @@ namespace Pujario.Core
 {
     public class BaseActor : BaseObject, IActor
     {
-        private bool _enabled;
-        private int _updateOrder;
         protected Transform2D _transform = Transform2D.Base;
         protected IComponent _rootComponent;
         private ComponentEnumerator _componentEnumerator;
@@ -39,6 +37,7 @@ namespace Pujario.Core
             }
         }
 
+        private bool _enabled;
         public virtual bool Enabled
         {
             get => _enabled;
@@ -52,6 +51,7 @@ namespace Pujario.Core
             }
         }
 
+        private int _updateOrder;
         public virtual int UpdateOrder
         {
             get => _updateOrder;

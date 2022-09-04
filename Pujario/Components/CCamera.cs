@@ -6,7 +6,7 @@ using Pujario.Core.Components;
 
 namespace Pujario.Components
 {
-    public class CCamera : TransformableBaseComponent, ICamera
+    public class CCamera : TransformableBaseComponent, ICamera, IComponent
     {
         private bool _needRecalc;
         private Matrix _transformMatrix;
@@ -46,26 +46,39 @@ namespace Pujario.Components
             get => _viewport;
             set
             {
-                if (value.Width == _viewport.Width && value.Height == _viewport.Height) return;
+                if (value.Height == _viewport.Height && value.Width == _viewport.Width) return;
                 _viewport = value;
                 _needRecalc = true;
             }
         }
 
+        public CCamera() => _viewport = Engine.Instance.TargetGame.GraphicsDevice.Viewport;
+
         public override void Initialize()
         {
             _needRecalc = true;
+            Engine.Instance.ViewportChanged += _setViewport;
             TransformChanged += _setNeedRecalc;
             base.Initialize();
         }
 
         protected override void Dispose(bool disposing)
         {
-            if (disposing) TransformChanged -= _setNeedRecalc;
+            if (disposing)
+            {
+                TransformChanged -= _setNeedRecalc;
+                Engine.Instance.ViewportChanged -= _setViewport;
+            }
+
             base.Dispose(disposing);
         }
 
         private void _setNeedRecalc(object sender, EventArgs e) => _needRecalc = true;
+        private void _setViewport(Viewport viewport)
+        {
+            _viewport = viewport;
+            _needRecalc = true;
+        }
 
         public override void Update(GameTime gameTime)
         {

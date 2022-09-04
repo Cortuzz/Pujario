@@ -1,20 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
+﻿using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
-using Pujario.Components;
 using Pujario.Core;
 using Pujario.Core.Input;
 using Pujario.Core.WorldPresentation;
-using Pujario.Utils;
 
 namespace Pujario
 {
     public class Game1 : Game
     {
         private GraphicsDeviceManager _graphics;
-        private CCamera _camera;
 
         public Game1()
         {
@@ -23,13 +18,14 @@ namespace Pujario
             IsMouseVisible = true;
             Window.AllowUserResizing = true;
         }
+
         protected override void Initialize()
         {
             Engine.Instance.Configure(
                 new EngineConfig
                 {
                     DefaultBufferSize = 10,
-                    DefaultWorldSize = new Point(10, 10),
+                    DefaultWorldSize = new Point(100, 100),
                     WorldChunkSize = 256,
                     FloatTolerance = 1e-5f,
                 },
@@ -43,15 +39,6 @@ namespace Pujario
                     new[] { typeof(BaseActor) }),
                 () => new SimpleTickBeaconSystem()
             );
-
-            var t = Transform2D.Base;
-            t.Position = new Vector2(
-                Engine.Instance.WorldMapping.Grid.GetLength(0) / 2 * Engine.Instance.WorldMapping.ChunkSize,
-                Engine.Instance.WorldMapping.Grid.GetLength(1) / 2 * Engine.Instance.WorldMapping.ChunkSize);
-
-            _camera = new CCamera();
-            _camera.Transform = t;
-            Engine.Instance.Camera = _camera;
 
             // if we use that, we don't need to call Engine in Update/Draw in the Game class 
             Components.Add(new EngineGameComponent(Engine.Instance, this));

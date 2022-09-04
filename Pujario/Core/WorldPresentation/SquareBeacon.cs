@@ -11,9 +11,7 @@ namespace Pujario.Core.WorldPresentation
 
         public TickBeaconMode Mode { get; set; }
 
-        private Vector2 _position = Vector2.Zero;
-        public Vector2 Position { get => _position; 
-            set => _position = value; }
+        public Vector2 Position { get; set; } = Vector2.Zero;
         public int R { get; set; }
 
         public IEnumerator<WorldMapping.Chunk> GetSelector(WorldMapping world)

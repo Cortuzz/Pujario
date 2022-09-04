@@ -101,7 +101,8 @@ namespace Pujario.Core.WorldPresentation
             {
                 var actor = sender as IActor;
                 Debug.Assert(actor != null, "Invalid sender");
-                Debug.Assert(_findLocatedActorWrapById(actor.Id, out var wrap), "This instance isn't associated with that Chunk");
+                bool found = _findLocatedActorWrapById(actor.Id, out var wrap);
+                Debug.Assert(found, "This instance isn't associated with that Chunk");
                 _locationChanged.Add(wrap);
             }
 

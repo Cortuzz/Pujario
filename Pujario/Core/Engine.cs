@@ -7,22 +7,30 @@ using Pujario.Core.Components;
 using Pujario.Core.Input;
 using Pujario.Core.WorldPresentation;
 using Pujario.Utils;
+using Pujario.Core.HUDs;
 
 namespace Pujario.Core
 {
     /// <summary>
     /// The God at your service
     /// </summary>
-    public class Engine : IEngine
+    public partial class Engine : IEngine
     {
         public static Func<float, float, bool> FloatEquality;
 
         private int _idCounter = int.MinValue; // podlyanka v code )) only 2^32 ids can be generated 
+        private int _lastViewportHeight;
+        private int _lastViewportWidth;
+
         private Game _targetGame;
-        private List<ITicking> _orderedInstanceManagers;
-        private WeakReference<ICamera> _camera;
-        private SpriteBatch _spriteBatch;
         private GraphicsDeviceManager _gManager;
+        private SpriteBatch _spriteBatch;
+
+        private List<IUpdateable> _updateOrderedInstanceManagers;
+        private List<IDrawable> _drawOrderedInstanceManagers;
+        private Dictionary<string, object> _instanceManagers;
+
+        private WeakReference<ICamera> _camera;
 
         public Game TargetGame
         {
@@ -35,9 +43,9 @@ namespace Pujario.Core
         }
 
         public EngineConfig Config { get; private set; }
-        public Dictionary<string, ITicking> InstanceManagers { get; private set; }
         public WorldMapping WorldMapping { get; private set; }
         public InputManager InputManager { get; private set; }
+        public HUDsManager HUDsManager { get; private set; }
 
         public int NextId => ++_idCounter;
 
@@ -58,7 +66,7 @@ namespace Pujario.Core
             get
             {
                 if (_camera.TryGetTarget(out var camera)) return camera;
-                throw new NullReferenceException("_camera was null");
+                return ZeroCamera.Instance;
             }
             set => _camera.SetTarget(value);
         }
@@ -81,33 +89,30 @@ namespace Pujario.Core
             InputManager = inputManager;
             _gManager = gManager;
             _camera.SetTarget(camera);
-            InstanceManagers = new Dictionary<string, ITicking>(Config.DefaultBufferSize);
-            _orderedInstanceManagers = new List<ITicking>(Config.DefaultBufferSize);
-            WorldMapping = new WorldMapping(Config.WorldChunkSize, new Point(20, 20),
+
+            _instanceManagers = new Dictionary<string, object>(Config.DefaultBufferSize);
+            _updateOrderedInstanceManagers = new List<IUpdateable>(Config.DefaultBufferSize);
+            _drawOrderedInstanceManagers = new List<IDrawable>(Config.DefaultBufferSize);
+
+            WorldMapping = new WorldMapping(Config.WorldChunkSize, Config.DefaultWorldSize,
                     tickBeaconSystemFabricMethod) { Enabled = true };
+            HUDsManager = new HUDsManager();
 
             FloatEquality = (f, f1) => Math.Abs(f - f1) < Config.FloatTolerance;
             InputManager.FloatEquality = FloatEquality;
+
+            _lastViewportWidth = _gManager.GraphicsDevice.Viewport.Width;
+            _lastViewportHeight = _gManager.GraphicsDevice.Viewport.Height;
         }
 
         public void Draw(GameTime gameTime)
         {
-#if DEBUG
-            if (gameTime.TotalGameTime.Seconds % 2 == 1)
-                Debug.WriteLine("Draw FPS - " + (1 / gameTime.ElapsedGameTime.TotalSeconds).ToString());
-#endif
-            Matrix? transformMatrix = null;
-            if (_camera.TryGetTarget(out var camera))
-            {
-                if (_gManager.PreferredBackBufferHeight != camera.Viewport.Height 
-                    || _gManager.PreferredBackBufferWidth != camera.Viewport.Width)
-                {
-                    camera.Viewport = new Viewport(camera.Viewport.X, camera.Viewport.Y,
-                        _gManager.PreferredBackBufferWidth, _gManager.PreferredBackBufferHeight);
-                }
+            var viewport = _gManager.GraphicsDevice.Viewport;
+            if (_lastViewportHeight != (_lastViewportHeight = viewport.Height)
+                || _lastViewportWidth != (_lastViewportWidth = viewport.Width)) ViewportChanged?.Invoke(viewport);
 
-                transformMatrix = camera.TransformMatrix;
-            }
+            Matrix? transformMatrix = null;
+            if (_camera.TryGetTarget(out var camera)) transformMatrix = camera.TransformMatrix;
 
             _gManager.GraphicsDevice.Clear(Color.DarkGray);
             _spriteBatch.Begin(
@@ -120,52 +125,89 @@ namespace Pujario.Core
                 transformMatrix);
 
             WorldMapping.Draw(gameTime, _spriteBatch);
-            foreach (var node in InstanceManagers)
+
+            var chad = _targetGame.Content.Load<Texture2D>("gigachad");
+            var rect = chad.Bounds;
+            for (int i = 0; i < 100000; i++)
             {
-                node.Value?.Draw(gameTime, _spriteBatch);
+                if (rect.Contains(_gManager.GraphicsDevice.Viewport.Bounds) || rect.Intersects(_gManager.GraphicsDevice.Viewport.Bounds))
+                    _spriteBatch.Draw(chad, Vector2.Zero, Color.WhiteSmoke);
             }
+            foreach (var drawable in _drawOrderedInstanceManagers) drawable.Draw(gameTime, _spriteBatch);
+
+            _spriteBatch.End();
+
+            _spriteBatch.Begin(
+                Config.DrawingSortMode,
+                BlendState,
+                SamplerState,
+                DepthStencilState,
+                RasterizerState,
+                Effect,
+                null);
+
+            using (var e = HUDsManager.GetDrawEnumerator())
+                while (e.MoveNext()) e.Current.Draw(gameTime, _spriteBatch);
 
             _spriteBatch.End();
         }
 
         public void Update(GameTime gameTime)
         {
-#if DEBUG
-            if (gameTime.TotalGameTime.Seconds % 2 == 1)
-                Debug.WriteLine("Update FPS - " + (1 / gameTime.ElapsedGameTime.TotalSeconds).ToString());
-#endif
             InputManager.RaiseEvents();
             if (WorldMapping.Enabled) WorldMapping.Update(gameTime);
 
-            foreach (var node in InstanceManagers)
-            {
-                if (node.Value is { Enabled: true })
-                    node.Value.Update(gameTime);
-            }
+            foreach (var updaetable in _updateOrderedInstanceManagers) updaetable.Update(gameTime);
         }
 
-        public void UseInstanceManager<TInstance>(IInstanceManager<TInstance> instanceManager, in string name)
+        public void UseInstanceManager<TInstance>(IInstanceManager<TInstance> instanceManager, string name)
             where TInstance : class
         {
-            InstanceManagers.Add(name, instanceManager);
-            var index = _orderedInstanceManagers.BinarySearch(instanceManager, UpdateOrderComparer.Instance);
-            index = index < 0 ? index ^ -1 : index;
-
-            _orderedInstanceManagers.Insert(index, instanceManager);
-        }
-
-        public void DisuseInstanceManager<TInstance>(IInstanceManager<TInstance> instanceManager, in string name)
-            where TInstance : class
-        {
-            if (InstanceManagers.Remove(name))
+            if (_instanceManagers.ContainsKey(name))
             {
-                _orderedInstanceManagers.RemoveAt(
-                    _orderedInstanceManagers.BinarySearch(instanceManager, UpdateOrderComparer.Instance));
-            }
 #if DEBUG
-            else throw new KeyNotFoundException("Unknown instance manager");
+                throw new ArgumentException("This key already exist");
 #endif
+#pragma warning disable CS0162 // Unreachable code detected
+                return;
+#pragma warning restore CS0162 // Unreachable code detected
+            }
+            _instanceManagers.Add(name, instanceManager);
+
+            if (_instanceManagers is IUpdateable updateable)
+            {
+                var index = _updateOrderedInstanceManagers.BinarySearch(updateable, UpdateOrderComparer.Instance);
+                index = index < 0 ? index ^ -1 : index;
+                _updateOrderedInstanceManagers.Insert(index, updateable);
+            }
+
+            if (_instanceManagers is IDrawable drawable)
+            {
+                var index = _drawOrderedInstanceManagers.BinarySearch(drawable, DrawOrderComparer.Instance);
+                index = index < 0 ? index ^ -1 : index;
+                _drawOrderedInstanceManagers.Insert(index, drawable);
+            }
         }
+
+        public void DisuseInstanceManager<TInstance>(IInstanceManager<TInstance> instanceManager, string name)
+            where TInstance : class
+        {
+            if (!_instanceManagers.Remove(name))
+#if DEBUG
+                    throw new KeyNotFoundException("Unknown instance manager");
+#else
+                    return;
+#endif
+            if (_instanceManagers is IUpdateable updateable)
+                _updateOrderedInstanceManagers.RemoveAt(
+                    _updateOrderedInstanceManagers.BinarySearch(updateable, UpdateOrderComparer.Instance));
+            if (_instanceManagers is IDrawable drawable)
+                _drawOrderedInstanceManagers.RemoveAt(
+                    _drawOrderedInstanceManagers.BinarySearch(drawable, DrawOrderComparer.Instance));
+        }
+
+        public bool TryGetInstanceManager(string name, out object instanceManager) => 
+            _instanceManagers.TryGetValue(name, out instanceManager);
 
         private IActor _placeActor(IActor actor, in Transform2D transform)
         {
@@ -183,26 +225,7 @@ namespace Pujario.Core
             result = new WeakReference<IActor>(_placeActor(fabric.CreateActor(), transform));
 
         public void SpawnActor(IActorFabric fabric, in Transform2D transform) => _placeActor(fabric.CreateActor(), transform);
-    }
 
-    /// <summary>
-    /// Can be used for attaching to <see cref="Game"/>, and auto updating/drawing
-    /// </summary>
-    public class EngineGameComponent : DrawableGameComponent
-    {
-        private readonly IEngine _engine;
-
-        public EngineGameComponent(IEngine engine, Game game) : base(game)
-        {
-            _engine = engine;
-            Enabled = true;
-            Visible = true;
-            UpdateOrder = int.MinValue;
-            DrawOrder = int.MinValue;
-        }
-
-        public override void Update(GameTime gameTime) => _engine.Update(gameTime);
-
-        public override void Draw(GameTime gameTime) => _engine.Draw(gameTime);
+        public event Action<Viewport> ViewportChanged;
     }
 }

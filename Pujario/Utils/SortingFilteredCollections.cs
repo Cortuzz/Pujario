@@ -171,6 +171,13 @@ namespace Pujario.Utils
         {
             if (!_needSorting) return;
             _items.Sort(_mixedComparision);
+            _needSorting = false;
+        }
+
+        public void RefreshAll()
+        {
+            _items.Sort(_mixedComparision);
+            _needSorting = false;
         }
 
         public void Add(T item)
@@ -402,7 +409,7 @@ namespace Pujario.Utils
         public void Add(T item)
         {
             _itemsToAdd.Add(item);
-            if (!_needFiltering) _needFiltering = !_filterPredicate(item);
+            _needFiltering = true;
         }
 
         public void Clear()
@@ -496,6 +503,12 @@ namespace Pujario.Utils
         {
             _flushChanges();
             if (_needFiltering) _rebuildFilteredCollection();
+        }
+
+        public void RefreshAll()
+        {
+            _items.Sort(_sortingComparer);
+            _rebuildFilteredCollection();
         }
     }
 }

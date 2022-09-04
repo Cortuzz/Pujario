@@ -4,7 +4,7 @@ using Pujario.Exceptions.Core;
 
 namespace Pujario.Core
 {
-    public interface IInstanceManager<TInstance> : ITicking, IEnumerable<TInstance> where TInstance : class
+    public interface IInstanceManager<TInstance> : IEnumerable<TInstance> where TInstance : class
     {
         /// <summary>
         /// Registers instance (strong ref used)  

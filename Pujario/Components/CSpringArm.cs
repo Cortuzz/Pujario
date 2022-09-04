@@ -31,6 +31,7 @@ namespace Pujario.Components
                 TransformChanged?.Invoke(this, EventArgs.Empty);
             }
         }
+
         public Transform2D RelativeTransform
         {
             get
@@ -51,38 +52,33 @@ namespace Pujario.Components
         public event EventHandler<EventArgs> TransformChanged;
 
         /// <summary>Variation range of arm</summary>
-        public float Variation = 300;
+        public float Variation = 500;
         /// <summary>0.0 - 1.0; part of variation area where oscillation will be ignored</summary>
-        public float Latency = .5f;
+        public float Latency = .25f;
         /// <summary>Speed of arm moving</summary>
-        public float Rigidity = 1000;
+        public float Rigidity = 200;
 
         public override void Update(GameTime gameTime)
         {
             var dist = (_destination - _transform.Position).Length() / Variation;
-            if (dist < Latency)
-            {
-                Debug.WriteLine(_transform.Position.ToString());
-                return;
-            }
+            if (dist < Latency) return;
 
             var d = Transform2D.Zero;
-            d.Position = _direction * Rigidity * (float)gameTime.ElapsedGameTime.TotalSeconds;
-            _transform.Position += d.Position;
 
-            /*
             var cf = (Latency - 1) / (dist - 1) - 1;
-
             if (cf > 0)
-                _transform.Position += _direction *
-                     cf * (float)gameTime.ElapsedGameTime.TotalSeconds * Rigidity * 1000;
+            {
+                d.Position += _direction *
+                     cf * (float)gameTime.ElapsedGameTime.TotalSeconds * Rigidity;
+                _transform.Position += d.Position;
+            }
             else
+            {
+                d.Position = _destination - _transform.Position;
                 _transform.Position = _destination;
-
-            d.Position = _transform.Position - d.Position;
-            */
+            }
+            
             _propagateTransform(d);
-            // Debug.WriteLine(_transform.Position.ToString() + " to " + _destination.ToString());
         }
 
         protected virtual void _propagateTransform(in Transform2D delta)
