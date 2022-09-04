@@ -125,14 +125,6 @@ namespace Pujario.Core
                 transformMatrix);
 
             WorldMapping.Draw(gameTime, _spriteBatch);
-
-            var chad = _targetGame.Content.Load<Texture2D>("gigachad");
-            var rect = chad.Bounds;
-            for (int i = 0; i < 100000; i++)
-            {
-                if (rect.Contains(_gManager.GraphicsDevice.Viewport.Bounds) || rect.Intersects(_gManager.GraphicsDevice.Viewport.Bounds))
-                    _spriteBatch.Draw(chad, Vector2.Zero, Color.WhiteSmoke);
-            }
             foreach (var drawable in _drawOrderedInstanceManagers) drawable.Draw(gameTime, _spriteBatch);
 
             _spriteBatch.End();
