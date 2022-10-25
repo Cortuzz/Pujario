@@ -3,11 +3,11 @@
 #define DRAW_TPS
 #endif
 
-
+using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework;
 using System.Diagnostics;
 using Pujario.Core;
-using Pujario.Core.HUDs;
+using Pujario.Core.Diagnostics;
 
 namespace Pujario
 {
@@ -16,41 +16,48 @@ namespace Pujario
     /// </summary>
     public class EngineGameComponent : DrawableGameComponent
     {
-        private readonly IEngine _engine;
         private int _lastUpdateGameSeconds = -1;
         private int _lastDrawGameSeconds = -1;
         private float _UPS, _DPS;
-
         private readonly TPS_HUD _TPS_HUD;
 
+        private readonly EngineCameraSignHUD _engineCameraSignHUD;
+
         public bool OutputTPS { get; set; }
-#if DEBUG && OUTPUT_TPS
-            = true;
-#endif
-        private bool _drawTPS
-#if DEBUG && DRAW_TPS
-            = true;
-#endif
-        public bool DrawTPS 
-        { 
-            get => _drawTPS;
-            set 
-            {
-                _drawTPS = value;
-                _TPS_HUD.Visible = value;
-            }
+
+        public bool DrawTPS
+        {
+            get => _TPS_HUD.Visible;
+            set => _TPS_HUD.Visible = value;
         }
 
-        public EngineGameComponent(IEngine engine, Game game) : base(game)
+        public bool DrawCameraPos
         {
-            _engine = engine;
+            get => _engineCameraSignHUD.Visible; 
+            set => _engineCameraSignHUD.Visible = value;
+        }
+
+        public EngineGameComponent() : base(Engine.Instance.TargetGame)
+        {
             Enabled = true;
             Visible = true;
             UpdateOrder = int.MinValue;
             DrawOrder = int.MinValue;
+#if OUTPUT_TPS
+            OutputTPS = true;
+#endif
 
             _TPS_HUD = new TPS_HUD(() => _DPS, () => _UPS);
             Engine.Instance.HUDsManager.RegisterInstance(_TPS_HUD);
+#if DRAW_TPS
+            _TPS_HUD.Visible = true;
+#endif
+            _engineCameraSignHUD = new EngineCameraSignHUD()
+                { CameraSign = Engine.Instance.TargetGame.Content.Load<Texture2D>("debugCameraSign") };
+            Engine.Instance.HUDsManager.RegisterInstance(_engineCameraSignHUD);
+#if DEBUG
+            _engineCameraSignHUD.Visible = true;
+#endif
         }
 
         ~EngineGameComponent()
@@ -65,7 +72,7 @@ namespace Pujario
             if (OutputTPS && _lastUpdateGameSeconds != (_lastUpdateGameSeconds = gameTime.TotalGameTime.Seconds))
                 Debug.WriteLine("Updates per seconds - " + _UPS.ToString());
 #endif
-            _engine.Update(gameTime);
+            Engine.Instance.Update(gameTime);
         }
 
 
@@ -77,7 +84,7 @@ namespace Pujario
                 Debug.WriteLine("Draws per second - " + _DPS.ToString());
 #endif
 
-            _engine.Draw(gameTime);
+            Engine.Instance.Draw(gameTime);
         }
     }
 }

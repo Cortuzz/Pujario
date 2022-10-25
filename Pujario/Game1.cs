@@ -41,7 +41,9 @@ namespace Pujario
             );
 
             // if we use that, we don't need to call Engine in Update/Draw in the Game class 
-            Components.Add(new EngineGameComponent(Engine.Instance, this));
+            Components.Add(new EngineGameComponent());
+
+            Test.InitializeTestGround();
 
             base.Initialize();
         }

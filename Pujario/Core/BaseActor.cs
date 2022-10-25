@@ -130,8 +130,7 @@ namespace Pujario.Core
             _componentEnumerator.Reset();
             while (_componentEnumerator.MoveNext())
             {
-                var temp = _componentEnumerator.Current as TClass;
-                if (temp != null) return new WeakReference<TClass>(temp);
+                if (_componentEnumerator.Current is TClass temp) return new WeakReference<TClass>(temp);
             }
 
             return new WeakReference<TClass>(null);
@@ -143,8 +142,7 @@ namespace Pujario.Core
             var result = new List<WeakReference<TClass>>();
             while (_componentEnumerator.MoveNext())
             {
-                var temp = _componentEnumerator.Current as TClass;
-                if (temp != null) result.Add(new WeakReference<TClass>(temp));
+                if (_componentEnumerator.Current is TClass temp) result.Add(new WeakReference<TClass>(temp));
             }
 
             return result;

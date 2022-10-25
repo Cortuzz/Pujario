@@ -14,7 +14,7 @@ namespace Pujario.Core
     /// <summary>
     /// The God at your service
     /// </summary>
-    public partial class Engine : IEngine
+    public partial class Engine
     {
         public static Func<float, float, bool> FloatEquality;
 
@@ -123,7 +123,7 @@ namespace Pujario.Core
                 RasterizerState,
                 Effect,
                 transformMatrix);
-
+            
             WorldMapping.Draw(gameTime, _spriteBatch);
             foreach (var drawable in _drawOrderedInstanceManagers) drawable.Draw(gameTime, _spriteBatch);
 
