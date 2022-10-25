@@ -16,7 +16,7 @@ namespace Pujario.Utils
     
     /// <summary>
     /// An collection presents similar behavior to "Microsoft.Xna.Framework.Game.SortingFilteringCollection[T]" which is internal.
-    ///
+    /// 
     /// Needs n of memory; good when you access collection rarely
     /// </summary>
     /// <typeparam name="T">Item type</typeparam>
