@@ -38,7 +38,7 @@ namespace Pujario.Utils
 
         public static bool operator !=(in Transform2D t1, in Transform2D t2) => !t1.Equals(t2);
 
-        public bool Equals(Transform2D other) =>
+        public bool Equals(Transform2D other) => Origin.Equals(other.Origin) &&
             Position.Equals(other.Position) && Scale.Equals(other.Scale) && Math.Abs(Rotation - other.Rotation) < 1e-5;
 
         public override bool Equals(object obj) => obj is Transform2D other && Equals(other);
