@@ -10,6 +10,7 @@ namespace Pujario.Core.Diagnostics
         private Func<float> _getDPS;
         private Func<float> _getUPS;
         private SpriteFont _font;
+        private int _prevUPS, _prevDPS; 
 
         public TPS_HUD(Func<float> getDPS, Func<float> getUPS)
         {
@@ -23,7 +24,8 @@ namespace Pujario.Core.Diagnostics
         public override void Draw(GameTime gameTime, SpriteBatch spriteBatch)
         {
             spriteBatch.DrawString(_font, 
-                "TPS(U/D): " + _getUPS().ToString() + "/" + _getDPS().ToString(), 
+                "TPS(U/D): " + (_prevUPS = (_prevUPS + (int)_getUPS()) / 2).ToString() + "/" 
+                    + (_prevDPS = (_prevDPS + (int)_getDPS()) / 2).ToString(), 
                 _viewportDest.Location.ToVector2(), 
                 Color.Green);
         }

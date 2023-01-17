@@ -1,6 +1,7 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework;
 using System;
+using Pujario.Core.Kernel;
 
 namespace Pujario.Utils
 {
@@ -27,6 +28,14 @@ namespace Pujario.Utils
                 new Vector2(lenght, thikness), 
                 SpriteEffects.None, 
                 .0f);
+        }
+
+        public static void DrawPolygon(this SpriteBatch batch, in Polygon2 polygon, float thikness, Color color, float scale = 1.0f)
+        {
+            for (int i = 0; i < polygon.points.Length; i++)
+                batch.DrawLine(
+                polygon.points[i] * scale,
+                    polygon.points[(i + 1) % polygon.points.Length] * scale, thikness, color);
         }
     }
 }
