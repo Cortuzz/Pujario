@@ -1,54 +1,71 @@
-﻿using System;
-using System.Diagnostics;
-using System.Linq;
+﻿using System.Collections.Generic;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using Pujario.NoiseGeneration;
-using Pujario.NoiseGeneration.Interfaces;
+using Pujario.Core;
+using Pujario.Core.Input;
+using Pujario.Core.WorldPresentation;
 
 namespace Pujario
 {
     public class Game1 : Game
     {
         private GraphicsDeviceManager _graphics;
-        private SpriteBatch _spriteBatch;
 
         public Game1()
         {
             _graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
+            Window.AllowUserResizing = true;
+            _graphics.SynchronizeWithVerticalRetrace = false;
+            IsFixedTimeStep = false;
         }
 
         protected override void Initialize()
         {
-            // TODO: Add your initialization logic here
+            Engine.Instance.Configure(
+                new EngineConfig
+                {
+                    DefaultBufferSize = 10,
+                    DefaultWorldSize = new Point(100, 100),
+                    WorldChunkSize = 256,
+                    FloatTolerance = 1e-5f,
+                },
+                this,
+                _graphics,
+                new InputManager(
+                    new Dictionary<string, InputCombination>(new[]
+                    {
+                        KeyValuePair.Create("Forward", new InputCombination(null, new[] { Keys.W, Keys.Up }))
+                    }),
+                    new[] { typeof(BaseActor) }),
+                () => new SimpleTickBeaconSystem()
+            );
+
+            // if we use that, we don't need to call Engine in Update/Draw in the Game class 
+            Components.Add(new EngineGameComponent());
+
+            Test.InitializeTestGround();
 
             base.Initialize();
         }
 
         protected override void LoadContent()
         {
-            _spriteBatch = new SpriteBatch(GraphicsDevice);
-
             // TODO: use this.Content to load your game content here
         }
 
         protected override void Update(GameTime gameTime)
         {
-            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
+            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed ||
+                Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
 
-            // TODO: Add your update logic here
-            
             base.Update(gameTime);
         }
 
         protected override void Draw(GameTime gameTime)
         {
-            // TODO: Add your drawing code here
-
             base.Draw(gameTime);
         }
     }

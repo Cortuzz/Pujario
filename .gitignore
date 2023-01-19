@@ -1,7 +1,10 @@
 ﻿x64
 Debug
 Release
-/Pujario/obj
-/Pujario/bin
-
-Pujario.sln.DotSettings.user
+Pujario/obj
+Pujario/bin
+Pujario/Content/bin
+Pujario/Content/obj
+.vs
+.idea
+/packages

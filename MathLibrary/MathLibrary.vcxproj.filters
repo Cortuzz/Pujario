@@ -13,10 +13,84 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Source Files\shapes">
+      <UniqueIdentifier>{f699d1ee-870c-46bc-b7e3-981224a734d6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\shapes">
+      <UniqueIdentifier>{1225d0da-ffee-46d1-9e6d-454f6ceaffcc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\basics">
+      <UniqueIdentifier>{cbe3b606-2b33-4069-b55d-1c91ae587750}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\basics">
+      <UniqueIdentifier>{af3d2420-6977-4c4b-a568-65f358fb10f8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="NoiseGenFunctions.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GJK.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="debug.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CircleShape.c">
+      <Filter>Source Files\shapes</Filter>
+    </ClCompile>
+    <ClCompile Include="PolygonShape.c">
+      <Filter>Source Files\shapes</Filter>
+    </ClCompile>
+    <ClCompile Include="CombinedShape.c">
+      <Filter>Source Files\shapes</Filter>
+    </ClCompile>
+    <ClCompile Include="LinearEq.c">
+      <Filter>Source Files\basics</Filter>
+    </ClCompile>
+    <ClCompile Include="Vectors.c">
+      <Filter>Source Files\basics</Filter>
+    </ClCompile>
+    <ClCompile Include="Utils.c">
+      <Filter>Source Files\basics</Filter>
+    </ClCompile>
+    <ClCompile Include="Collider.c">
+      <Filter>Source Files\shapes</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="NoiseGenFunctions.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GJK.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="debug.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CircleShape.h">
+      <Filter>Header Files\shapes</Filter>
+    </ClInclude>
+    <ClInclude Include="PolygonShape.h">
+      <Filter>Header Files\shapes</Filter>
+    </ClInclude>
+    <ClInclude Include="CombinedShape.h">
+      <Filter>Header Files\shapes</Filter>
+    </ClInclude>
+    <ClInclude Include="Vectors.h">
+      <Filter>Header Files\basics</Filter>
+    </ClInclude>
+    <ClInclude Include="LinearEq.h">
+      <Filter>Header Files\basics</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils.h">
+      <Filter>Header Files\basics</Filter>
+    </ClInclude>
+    <ClInclude Include="Collider.h">
+      <Filter>Header Files\shapes</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
