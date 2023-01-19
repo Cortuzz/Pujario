@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Pujario": {
+      "commandName": "Project",
+      "nativeDebugging": true
+    }
+  }
+}

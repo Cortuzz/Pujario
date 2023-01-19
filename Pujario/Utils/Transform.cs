@@ -1,20 +1,21 @@
 ﻿using System;
+using System.Runtime.InteropServices;
 using Microsoft.Xna.Framework;
 
 namespace Pujario.Utils
 {
+    [StructLayout(LayoutKind.Sequential)]
     public struct Transform2D : IEquatable<Transform2D>
     {
         public static readonly Transform2D Zero = new Transform2D(Vector2.Zero, Vector2.Zero, Vector2.Zero, .0f);
         public static readonly Transform2D Base = new Transform2D(Vector2.Zero, Vector2.Zero, Vector2.One, .0f);
 
         public Vector2 Position;
-
+        public Vector2 Scale;
         /// <summary>
         /// Origin point coords related to <see cref="Position"/>
         /// </summary>
         public Vector2 Origin;
-        public Vector2 Scale;
         public float Rotation;
 
         public Transform2D(Vector2 position, Vector2 origin, Vector2 scale, float rotation)
@@ -37,7 +38,7 @@ namespace Pujario.Utils
 
         public static bool operator !=(in Transform2D t1, in Transform2D t2) => !t1.Equals(t2);
 
-        public bool Equals(Transform2D other) =>
+        public bool Equals(Transform2D other) => Origin.Equals(other.Origin) &&
             Position.Equals(other.Position) && Scale.Equals(other.Scale) && Math.Abs(Rotation - other.Rotation) < 1e-5;
 
         public override bool Equals(object obj) => obj is Transform2D other && Equals(other);

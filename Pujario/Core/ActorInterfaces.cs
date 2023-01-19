@@ -2,7 +2,6 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Pujario.Utils;
-using Pujario.Core.Collisions;
 using Pujario.Core.Components;
 
 namespace Pujario.Core

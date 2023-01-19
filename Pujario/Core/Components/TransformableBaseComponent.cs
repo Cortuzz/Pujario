@@ -18,6 +18,7 @@ namespace Pujario.Core.Components
                 TransformChanged?.Invoke(this, EventArgs.Empty);
                 _propagateTransform(delta);
             }
+            // TODO : why I managed to propagate delta transform ? mb just set to it
         }
 
         public Transform2D RelativeTransform

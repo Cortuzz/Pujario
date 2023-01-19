@@ -1,7 +1,6 @@
-#include "MathLibrary.h"
+#include "NoiseGenFunctions.h"
 
 #include <cstdint>
-
 
 const uint8_t permutation[] = {
     151, 160, 137, 91, 90, 15,
